@@ -1,89 +1,79 @@
-GitHub → jsDelivr CDN Generator
+# GitDelivr 🚀
 
-Anux CDN is a powerful and modern tool that helps developers generate CDN links directly from GitHub repositories using jsDelivr. No need to remember URL formats or manually build links — simply enter repository details, browse files visually, and instantly get ready-to-use CDN URLs.
+> **Convert GitHub to jsDelivr CDN Links Instantly.**
 
-Screenshot:
-https://github.com/anuxagfr/GitHub-jsDelivr-CDN-Generator/blob/main/Screenshot/Screenshot_20250517-023226.Chrome.png
+[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/gitdelivr/gitdelivr.github.io)
+[![Website](https://img.shields.io/website-up-down-green-red/http/gitdelivr.github.io.svg)](https://gitdelivr.github.io/)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](#license)
 
-FEATURES
+**GitDelivr** is an open-source tool designed to help developers, designers, and maintainers turn raw GitHub files into production-ready assets served by [jsDelivr's](https://www.jsdelivr.com/) global network. Stop struggling with raw links and start delivering assets with low latency.
 
-• Generate CDN links for any file in a public GitHub repository
-• Live HTML tag snippets for instant embedding
-• Download files directly from the interface
-• One-click clipboard copy buttons
-• Optional GitHub token support for private repos and increased rate limits
-• Search files inside the repository
-• Mobile-friendly, modern UI
-• Displays file information: name, type, encoding, size
+---
 
-HOW TO USE
+## 🌟 Features
 
-Enter your GitHub username (example: anuxagfr)
+* **Global Edge Network:** Assets are served from over 110 Points of Presence (PoPs) worldwide, ensuring high speed and low latency.
+* **Smart HTML Generation:** Automatically detects file types and generates valid HTML tags for Scripts, CSS, and Images.
+* **Repository Archiving:** Download specific branches or full repositories as optimized ZIP files for backups or offline use.
+* **Instant File Browsing:** Browse repository structures instantly without cloning.
+* **Broad Compatibility:** Works seamlessly with GitHub, npm, WordPress, React, Vue.js, and Bootstrap.
+* **100% Free & Open Source:** No credit card required, unlimited bandwidth for standard use.
 
-Enter your repository name (example: Anurag-Gautam)
+## 🛠️ How It Works
 
-Optionally enter a branch (example: main) and/or GitHub token
+1.  **Enter Repository Details:** Simply paste your GitHub username and repository name.
+2.  **Select Your File:** Use the smart file browser to navigate the repo structure.
+3.  **Copy & Paste:** Get the optimized CDN link or full HTML tag instantly and paste it into your project.
 
-Click “Browse Files”
+## 🚀 Usage
 
-Click “Generate CDN” next to any file
+Visit the live tool here: **[GitDelivr Generator](https://gitdelivr.github.io/cdn_generator.html)**
 
-Copy or use the generated CDN link or HTML snippet
+### Example Use Cases
+* **Developers:** Quickly test libraries or assets in CodePen, JSFiddle, or local environments.
+* **Maintainers:** Share direct installation links for open-source projects in READMEs.
+* **Designers:** Host portfolio images, custom fonts, and CSS stylesheets for free.
 
-EXAMPLE
+## 📸 Screenshots
 
-CDN URL:
-https://cdn.jsdelivr.net/gh/anuxagfr/Anurag-Gautam/styles.css
+*(Add screenshots of your application here)*
 
-HTML Snippet:
+## 🤝 Contributing
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/anuxagfr/Anurag-Gautam/styles.css">
-BUILT WITH
+Contributions, issues, and feature requests are welcome!
+Feel free to check the [issues page](https://github.com/gitdelivr/gitdelivr.github.io/issues) if you want to contribute.
 
-• HTML5
-• CSS3
-• JavaScript (Vanilla)
-• GitHub REST API
-• jsDelivr CDN
+1.  Fork the Project
+2.  Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3.  Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4.  Push to the Branch (`git push origin feature/AmazingFeature`)
+5.  Open a Pull Request
 
-LIVE DEMO
+## ☕ Support
 
-Open Tool:
-https://anuxagfr.github.io/GitHub-jsDelivr-CDN-Generator/
+If this tool saved you time, you can help keep the servers running by buying a coffee!
 
-Hosted by: anuxagfr
+<a href="https://www.buymeacoffee.com/Anuragfr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
 
-FUTURE PLANS
+## 📝 FAQ
 
-• Folder-level CDN links
-• File previews (images, HTML, etc.)
-• Theme switcher (dark/light mode)
-• Download all files as ZIP
-• Admin panel with analytics
+**Q: Is this completely free?**
+A: Yes! We use the jsDelivr open-source network which is free for everyone.
 
-CONTRIBUTING
+**Q: What about private repositories?**
+A: Currently, this works best with public repositories. Support for private repositories via tokens is in development.
 
-Fork this repository
+**Q: Can I use this for commercial projects?**
+A: Yes, jsDelivr is free for commercial use. Ensure your repository settings and code licenses permit the intended usage.
 
-Create a new branch: git checkout -b feature/your-feature
+## 📬 Contact
 
-Commit your changes: git commit -m "Add new feature"
+Created with ♥ by **Anurag**
 
-Push to the branch: git push origin feature/your-feature
+* **Email:** [gitdelivr@gmail.com](mailto:gitdelivr@gmail.com)
+* **Instagram:** [@anuxagfr](https://instagram.com/anuxagfr)
+* **Portfolio:** [anuragfr.github.io](https://anuragfr.github.io)
 
-Open a Pull Request
+## 📄 License
 
-LICENSE
-
-MIT License © 2025 anuxagfr
-https://github.com/anuxagfr
-
-CONNECT WITH ME
-
-GitHub: https://github.com/anuxagfr
-
-Instagram: https://instagram.com/anuxagfr
-
-YouTube: https://youtube.com/@anuxagfr
-
-Powered by jsDelivr + GitHub CDN
+Distributed under the MIT License. See `LICENSE` for more information.
