@@ -601,7 +601,70 @@ if (submitReviewBtn) {
         }
     });
 }
+// =======================================================
+// --- BLOGGER FEED INTEGRATION ---
+// =======================================================
 
+function showBlogs(json) {
+    let html = "";
+    const posts = json.feed.entry;
+    const container = document.getElementById("blog-container");
+
+    if (!posts || !container) return;
+
+    for (let i = 0; i < Math.min(3, posts.length); i++) {
+        const post = posts[i];
+        const title = post.title.$t;
+        // Find the alternate link (the actual post URL)
+        const linkObj = post.link.find(l => l.rel === "alternate");
+        const link = linkObj ? linkObj.href : "#";
+        
+        // Extract Thumbnail (High Quality)
+        let image = "";
+        if (post.media$thumbnail) {
+             // Replace s72-c (thumbnail size) with s600 (larger size) for better quality
+             const imgUrl = post.media$thumbnail.url.replace(/s72-c/, "s600");
+             image = `
+                <div class="h-48 overflow-hidden bg-gray-100 dark:bg-slate-700 relative">
+                    <img src="${imgUrl}" alt="${title}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy">
+                </div>`;
+        } else {
+             // Fallback if no image
+             image = `
+                <div class="h-48 bg-gray-100 dark:bg-slate-700 flex items-center justify-center text-slate-400">
+                    <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                </div>`;
+        }
+
+        html += `
+        <article class="reveal delay-${(i+1)*100} bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-xl hover:border-blue-500/20 transition-all duration-300 group hover:-translate-y-2 flex flex-col h-full overflow-hidden">
+          ${image}
+          <div class="p-6 flex-1 flex flex-col">
+            <h3 class="text-lg font-bold mb-3 text-slate-900 dark:text-white leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                <a href="${link}" target="_blank">${title}</a>
+            </h3>
+            <div class="mt-auto pt-4 border-t border-slate-100 dark:border-slate-700">
+                <a href="${link}" target="_blank" class="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 inline-flex items-center transition-colors">
+                    Read Article 
+                    <svg class="w-4 h-4 ml-1 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+                </a>
+            </div>
+          </div>
+        </article>
+      `;
+    }
+
+    container.innerHTML = html;
+    
+    // Re-trigger scroll animations for the new elements if the observer exists
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add('active'); observer.unobserve(entry.target); }});
+    }, { threshold: 0.1 });
+    document.querySelectorAll('#blog-container .reveal').forEach(el => observer.observe(el));
+}
+
+// Make globally accessible for JSONP callback
+window.showBlogs = showBlogs;
 // --- Contact Form ---
 const contactForm = document.getElementById('contactForm');
 if (contactForm) {
