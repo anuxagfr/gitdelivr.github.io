@@ -606,39 +606,42 @@ if (submitReviewBtn) {
 // =======================================================
 
 function showBlogs(json) {
-    let html = "";
-    const posts = json.feed.entry;
     const container = document.getElementById("blog-container");
+    if (!container) return;
 
-    if (!posts || !container) return;
+    const posts = json.feed.entry;
+    if (!posts || posts.length === 0) {
+        container.innerHTML = '<p class="col-span-full text-center text-slate-500">No blog posts found.</p>';
+        return;
+    }
 
+    let html = "";
+    
+    // Loop through posts (max 3)
     for (let i = 0; i < Math.min(3, posts.length); i++) {
         const post = posts[i];
         const title = post.title.$t;
-        // Find the alternate link (the actual post URL)
+        // Find the actual link to the post
         const linkObj = post.link.find(l => l.rel === "alternate");
         const link = linkObj ? linkObj.href : "#";
         
-        // Extract Thumbnail (High Quality)
+        // Extract Image (Use high-res if available)
         let image = "";
         if (post.media$thumbnail) {
-             // Replace s72-c (thumbnail size) with s600 (larger size) for better quality
-             const imgUrl = post.media$thumbnail.url.replace(/s72-c/, "s600");
-             image = `
-                <div class="h-48 overflow-hidden bg-gray-100 dark:bg-slate-700 relative">
-                    <img src="${imgUrl}" alt="${title}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy">
-                </div>`;
+             const imgUrl = post.media$thumbnail.url.replace(/s72-c/, "s600"); // Get higher resolution
+             image = `<img src="${imgUrl}" alt="${title}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy">`;
         } else {
-             // Fallback if no image
-             image = `
-                <div class="h-48 bg-gray-100 dark:bg-slate-700 flex items-center justify-center text-slate-400">
-                    <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                </div>`;
+             // Fallback placeholder
+             image = `<div class="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-slate-700 text-slate-400">
+                        <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path></svg>
+                      </div>`;
         }
 
         html += `
         <article class="reveal delay-${(i+1)*100} bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-xl hover:border-blue-500/20 transition-all duration-300 group hover:-translate-y-2 flex flex-col h-full overflow-hidden">
-          ${image}
+          <div class="h-48 overflow-hidden bg-gray-100 dark:bg-slate-700 relative">
+             ${image}
+          </div>
           <div class="p-6 flex-1 flex flex-col">
             <h3 class="text-lg font-bold mb-3 text-slate-900 dark:text-white leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                 <a href="${link}" target="_blank">${title}</a>
@@ -650,22 +653,27 @@ function showBlogs(json) {
                 </a>
             </div>
           </div>
-        </article>
-      `;
+        </article>`;
     }
 
     container.innerHTML = html;
     
-    // Re-trigger scroll animations for the new elements if the observer exists
+    // Trigger animations for new elements
     const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add('active'); observer.unobserve(entry.target); }});
+        entries.forEach(entry => { 
+            if (entry.isIntersecting) { 
+                entry.target.classList.add('active'); 
+                observer.unobserve(entry.target); 
+            }
+        });
     }, { threshold: 0.1 });
-    document.querySelectorAll('#blog-container .reveal').forEach(el => observer.observe(el));
+    
+    container.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 }
 
-// Make globally accessible for JSONP callback
-window.showBlogs = showBlogs;
-// --- Contact Form ---
+// CRITICAL: Expose the function to the global window object
+// This allows the Blogger JSONP callback to find it!
+window.showBlogs = showBlogs;// --- Contact Form ---
 const contactForm = document.getElementById('contactForm');
 if (contactForm) {
     contactForm.addEventListener('submit', async (e) => {
