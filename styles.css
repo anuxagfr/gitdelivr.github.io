@@ -10,6 +10,24 @@
     --text-light: #f8fafc;
     --bmc-yellow: #FFDD00;
 }
+ /* --- NEW: MENU DOWNLOAD BUTTON CODE --- */
+        .nav-btn {
+            background-color: var(--primary-blue);
+            color: white !important;
+            padding: 10px 24px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+        }
+
+        .nav-btn:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(59, 130, 246, 0.5);
+        }
 
 @media (prefers-color-scheme: dark) {
     body {
