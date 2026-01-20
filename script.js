@@ -248,12 +248,12 @@ function triggerAiSummary() {
 }
 
 // --- Chat Logic ---
-const chatBtn = document.getElementById('chatToggle');
-const chatWindow = document.getElementById('chatWindow');
-const closeChat = document.getElementById('closeChat');
-const chatInput = document.getElementById('chatInput');
-const sendBtn = document.getElementById('sendMessage');
-const messagesContainer = document.getElementById('chatMessages');
+//const chatBtn = document.getElementById('chatToggle');
+//const chatWindow = document.getElementById('chatWindow');
+//const closeChat = document.getElementById('closeChat');
+//const chatInput = document.getElementById('chatInput');
+//const sendBtn = document.getElementById('sendMessage');
+//const messagesContainer = document.getElementById('chatMessages');
 const clearChatBtn = document.getElementById('clearChat');
 
 // Chat System Prompt
@@ -269,7 +269,7 @@ const systemPrompt = isToolPage
        Keep answers concise.`;
 
 let chatHistory = systemPrompt + "\n";
-
+//c.ui
 if(chatBtn) {
     const toggle = () => chatWindow.classList.toggle('open');
     chatBtn.onclick = toggle;
@@ -354,6 +354,7 @@ const firebaseConfig = {
     messagingSenderId: "44677120607",
     appId: "1:44677120607:web:b4719f7b7c6414cd19d1ea",
     measurementId: "G-9RK16SGB09"
+        databaseURL: "https://cdn-generator-default-rtdb.firebaseio.com"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -1170,6 +1171,139 @@ function initAdminPage() {
     });
 
     window.deleteItem = async (col, id) => { if(confirm('Delete this item?')) await deleteDoc(doc(db, col, id)); };
+}
+
+
+// ======================================================
+// --- FINAL INTEGRATION: CHAT, UI & NOTIFICATIONS ---
+// ======================================================
+
+// 1. LIVE CHAT SYSTEM (UI + Logic)
+async function initChatSystem() {
+    console.log("Initializing Chat System...");
+
+    // A. Auto Login
+    onAuthStateChanged(auth, (user) => {
+        if (!user) signInAnonymously(auth).catch(err => console.error("Auth Error:", err));
+    });
+
+    // B. Get Elements
+    const chatBtn = document.getElementById('chatToggle');
+    const closeChatBtn = document.getElementById('closeChat');
+    const chatWindow = document.getElementById('chatWindow');
+    const sendBtn = document.getElementById('sendMessage');
+    const chatInput = document.getElementById('chatInput');
+    const msgContainer = document.getElementById('chatMessages');
+
+    // C. UI Toggle Logic (Yeh Missing Tha!)
+    if (chatBtn && chatWindow) {
+        const toggleChat = () => chatWindow.classList.toggle('open'); // CSS class 'open' handle karega visibility
+        chatBtn.onclick = toggleChat;
+        if(closeChatBtn) closeChatBtn.onclick = toggleChat;
+    }
+
+    if (!msgContainer) return;
+
+    // D. Listen for Messages (Realtime)
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            const chatRef = ref(rtdb, `support_chats/${user.uid}/messages`);
+            onValue(chatRef, (snapshot) => {
+                const msgs = snapshot.val();
+                // Reset UI
+                msgContainer.innerHTML = `
+                <div class="flex items-start mb-4">
+                    <div class="bg-blue-100 dark:bg-blue-900 text-slate-800 dark:text-slate-200 p-3 rounded-lg rounded-tl-none max-w-[85%] text-sm shadow-sm">
+                        👋 Hi Anurag! How can I help?
+                    </div>
+                </div>`;
+                
+                if (msgs) {
+                    Object.values(msgs).forEach(msg => {
+                        const isUser = msg.sender === 'user';
+                        // Styling for User vs Admin
+                        const align = isUser ? 'justify-end' : 'justify-start';
+                        const bubbleClass = isUser 
+                            ? "bg-blue-600 text-white rounded-tr-none" 
+                            : "bg-gray-200 dark:bg-slate-700 text-slate-900 dark:text-white rounded-tl-none";
+                        
+                        msgContainer.innerHTML += `
+                            <div class="flex ${align} mb-2 w-full">
+                                <div class="${bubbleClass} p-3 rounded-lg max-w-[85%] text-sm shadow-sm break-words">
+                                    ${msg.text}
+                                </div>
+                            </div>`;
+                    });
+                    // Auto Scroll to bottom
+                    setTimeout(() => msgContainer.scrollTop = msgContainer.scrollHeight, 100);
+                }
+            });
+        }
+    });
+
+    // E. Send Message Logic
+    const handleSend = async () => {
+        const text = chatInput.value.trim();
+        if (!text || !auth.currentUser) return;
+        
+        chatInput.value = '';
+        const uid = auth.currentUser.uid;
+
+        // 1. Save Message
+        await push(ref(rtdb, `support_chats/${uid}/messages`), {
+            sender: 'user', text, timestamp: Date.now()
+        });
+
+        // 2. Notify Admin (Metadata update)
+        await update(ref(rtdb, `support_chats/${uid}/metadata`), {
+            lastMessage: text, timestamp: Date.now(), uid
+        });
+    };
+
+    if(sendBtn) sendBtn.addEventListener('click', handleSend);
+    if(chatInput) chatInput.addEventListener('keypress', (e) => {
+        if(e.key === 'Enter') handleSend();
+    });
+}
+
+// 2. PUSH NOTIFICATIONS (Capacitor Logic)
+async function setupNotifications() {
+    if (!window.Capacitor) {
+        console.log("Web Mode: Notifications skipped.");
+        return;
+    }
+
+    const PushNotifications = window.Capacitor.Plugins.PushNotifications;
+    
+    // Permission & Registration
+    let permStatus = await PushNotifications.checkPermissions();
+    if (permStatus.receive === 'prompt') permStatus = await PushNotifications.requestPermissions();
+    if (permStatus.receive !== 'granted') return;
+
+    await PushNotifications.register();
+
+    // Listeners
+    PushNotifications.addListener('pushNotificationReceived', (notification) => {
+        alert(notification.title + ": " + notification.body);
+    });
+
+    PushNotifications.addListener('pushNotificationActionPerformed', () => {
+        // Notification click par chat open karein
+        const cw = document.getElementById('chatWindow');
+        if(cw) cw.classList.add('open');
+    });
+}
+
+// --- START EVERYTHING ---
+// (Ensure DOM is ready)
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        initChatSystem();
+        setupNotifications();
+    });
+} else {
+    initChatSystem();
+    setupNotifications();
 }
 
 initAdminPage();
