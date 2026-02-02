@@ -309,11 +309,12 @@
     <script type="module" src="script.js"></script>
 
     <script>
+/**
+ * DUAL-MODE INTEGRATION: Handles both manual pasting of GitHub URLs 
+ * and automatic fetching from the address bar path.
+ */
 
-
-        // --- DUAL MODE: MANUAL PASTE + AUTO-OPEN LOGIC ---
-
-// 1. Manual Paste Function (Aapka existing logic thode sudhar ke saath)
+// 1. Manual Paste and Auto-Fetch Logic
 function parseGitHubUrl(url) {
     url = url.trim();
     if (!url || !url.includes("github.com")) return;
@@ -323,6 +324,7 @@ function parseGitHubUrl(url) {
         if (pathParts.length >= 2) {
             const user = pathParts[0];
             const repo = pathParts[1];
+            
             document.getElementById('user').value = user;
             document.getElementById('repo').value = repo;
             
@@ -332,23 +334,27 @@ function parseGitHubUrl(url) {
                 document.getElementById('branch').value = 'main';
             }
 
-            // Paste karte hi automatically files fetch karein
+            // Automate fetching after successful parse
             if (typeof fetchFiles === "function") {
+                console.log("Auto-fetching from pasted URL...");
                 setTimeout(fetchFiles, 500); 
             }
         }
     } catch (e) {
-        console.error("Parsing error:", e);
+        console.error("URL Parsing Error:", e);
     }
 }
 
-// 2. Automatic URL Detection (Jab koi gitdelivr.in/user/repo par aaye)
-function handleAutoOpen() {
-    const pathParts = window.location.pathname.split('/').filter(p => p);
+// 2. Automatic URL Detection (Handles gitdelivr.in/user/repo)
+function initializeGitDelivrSystem() {
+    // Check both Path and Query Parameter for compatibility
+    const urlParams = new URLSearchParams(window.location.search);
+    let repoPath = urlParams.get('repo') || window.location.pathname;
+
+    const pathParts = repoPath.split('/').filter(p => p);
     
-    // Check if it's a GitHub style path (e.g., /username/repository)
+    // Check if path is a valid GitHub-style user/repo
     if (pathParts.length >= 2) {
-        // Internal pages ko skip karein
         const internalPages = ['index.html', 'app.html', 'admin.html', 'cdn_generator.html', 'GitDelivr_App.html'];
         if (internalPages.includes(pathParts[0])) return;
 
@@ -360,25 +366,26 @@ function handleAutoOpen() {
             branch = pathParts[3];
         }
 
-        // UI Fill karein
-        document.getElementById('user').value = user;
-        document.getElementById('repo').value = repo;
-        document.getElementById('branch').value = branch;
+        // Fill the UI fields
+        if (document.getElementById('user')) document.getElementById('user').value = user;
+        if (document.getElementById('repo')) document.getElementById('repo').value = repo;
+        if (document.getElementById('branch')) document.getElementById('branch').value = branch;
 
-        // Automatically fetch files
+        // Automatically fetch files for the user
         if (typeof fetchFiles === "function") {
-            console.log("Auto-opening repository...");
-            setTimeout(fetchFiles, 800); // 0.8s delay smooth transition ke liye
+            console.log("Auto-opening repository from URL path...");
+            setTimeout(fetchFiles, 800); 
         }
     }
 }
 
-// Initialize on load
-window.addEventListener('DOMContentLoaded', handleAutoOpen);
+// Run initialization when page is ready
+window.addEventListener('DOMContentLoaded', initializeGitDelivrSystem);
 
     </script>
 </body>
 </html>
+
 
 
 
