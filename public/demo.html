@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitDelivr Documentation</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts matched with main site -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { 
+                        sans: ['Inter', 'sans-serif'], 
+                        mono: ['JetBrains Mono', 'monospace'] 
+                    },
+                    colors: {
+                        slate: {
+                            900: '#0f172a',
+                            800: '#1e293b',
+                            700: '#334155',
+                        },
+                        brand: { 
+                            cyan: '#00C9FF',
+                            blue: '#0066ff'
+                        }
+                    },
+                    animation: {
+                        'dropdown-fade': 'dropdownFade 0.2s ease-out forwards',
+                    },
+                    keyframes: {
+                        dropdownFade: {
+                            '0%': { opacity: '0', transform: 'scale(0.95) translateY(-5px)' },
+                            '100%': { opacity: '1', transform: 'scale(1) translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        /* Layout Structure - Colors removed to allow Tailwind dark mode classes */
+        .docs-layout { display: flex; min-height: calc(100vh - 64px); }
+        
+        .sidebar {
+            width: 260px;
+            padding: 24px;
+            height: calc(100vh - 64px);
+            position: sticky;
+            top: 64px;
+            overflow-y: auto;
+            @apply bg-white dark:bg-slate-800/80 backdrop-blur-md border-r border-slate-200 dark:border-slate-800 transition-colors duration-300;
+        }
+
+        .sidebar::-webkit-scrollbar { width: 4px; }
+        .sidebar::-webkit-scrollbar-track { background: transparent; }
+        .sidebar::-webkit-scrollbar-thumb { @apply bg-slate-300 dark:bg-slate-600 rounded-full; }
+
+        .nav-btn {
+            @apply w-full text-left px-4 py-2.5 mb-2 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white transition-all duration-200;
+        }
+        .nav-btn.active {
+            @apply bg-blue-600 text-white shadow-md hover:bg-blue-700 hover:text-white dark:hover:text-white;
+        }
+
+        .content-area {
+            flex: 1;
+            padding: 40px;
+            max-width: 900px;
+            @apply bg-gray-50 dark:bg-slate-900 transition-colors duration-300;
+        }
+
+        .doc-section { display: none; animation: fadeIn 0.3s ease-in-out; }
+        .doc-section.active-section { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Typography */
+        .page-title { @apply text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white mb-3 tracking-tight; }
+        .page-description { @apply text-lg text-slate-600 dark:text-slate-400 mb-8 leading-relaxed; }
+
+        /* Cards */
+        .step-card {
+            @apply bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 mb-6 transition-colors duration-300;
+        }
+        .step-card h3 { @apply text-xl font-bold text-slate-900 dark:text-white mb-2; }
+        .step-card p { @apply text-slate-600 dark:text-slate-400 mb-4 text-sm leading-relaxed; }
+
+        /* Code Blocks */
+        .code-wrapper {
+            @apply bg-slate-900 p-4 rounded-xl overflow-x-auto relative border border-slate-800 shadow-inner;
+        }
+        .code-wrapper code, .code-wrapper pre {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: #4ade80; /* Green text for URL */
+        }
+        .code-wrapper pre code { color: #e2e8f0; } /* Light gray text for HTML */
+        
+        .code-tag { color: #60a5fa; } /* Blue for tags */
+        .code-attr { color: #c084fc; } /* Purple for attributes */
+        .code-string { color: #fde047; } /* Yellow for strings */
+
+        /* Global Copy Button Styles (For Code Wrappers only) */
+        .copy-btn {
+            @apply absolute top-2 right-2 bg-white/10 border border-white/20 text-slate-300 rounded-lg p-1.5 flex items-center justify-center cursor-pointer transition-all duration-200 opacity-0;
+        }
+        .code-wrapper:hover .copy-btn { @apply opacity-100; }
+        .copy-btn:hover { @apply bg-white/20 text-white; }
+        .copy-btn svg { width: 16px; height: 16px; }
+
+        /* CSS Loaders Demo Styles */
+        .loader-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
+        .loader-card { @apply bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 flex flex-col items-center shadow-sm; }
+        .loader-display { @apply h-28 w-full bg-slate-50 dark:bg-slate-900/50 rounded-xl flex items-center justify-center mb-4 border border-dashed border-slate-300 dark:border-slate-600; }
+        
+        .spin-loader { width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top: 4px solid #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .pulse-loader { display: flex; gap: 6px; }
+        .pulse-loader div { width: 12px; height: 12px; background-color: #a855f7; border-radius: 50%; animation: pulse 1.2s infinite ease-in-out both; }
+        .pulse-loader div:nth-child(1) { animation-delay: -0.32s; } .pulse-loader div:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes pulse { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+        
+        .bar-loader { display: flex; gap: 4px; height: 30px; align-items: flex-end; }
+        .bar-loader div { width: 6px; background-color: #10b981; animation: bounce 1.2s infinite ease-in-out; border-radius: 2px; }
+        .bar-loader div:nth-child(1) { height: 15px; animation-delay: -0.24s; } .bar-loader div:nth-child(2) { height: 25px; animation-delay: -0.12s; } .bar-loader div:nth-child(3) { height: 35px; animation-delay: 0s; }
+        @keyframes bounce { 0%, 100% { transform: scaleY(0.6); } 50% { transform: scaleY(1.2); } }
+        
+        /* New Loaders */
+        .wave-loader { display: flex; gap: 4px; height: 30px; align-items: center; }
+        .wave-loader div { width: 5px; height: 10px; background-color: #f43f5e; animation: wave 1s infinite ease-in-out; border-radius: 2px; }
+        .wave-loader div:nth-child(1) { animation-delay: -0.4s; } .wave-loader div:nth-child(2) { animation-delay: -0.3s; }
+        .wave-loader div:nth-child(3) { animation-delay: -0.2s; } .wave-loader div:nth-child(4) { animation-delay: -0.1s; }
+        .wave-loader div:nth-child(5) { animation-delay: 0s; }
+        @keyframes wave { 0%, 40%, 100% { transform: scaleY(1); } 20% { transform: scaleY(3); } }
+
+        .dual-ring-loader { display: inline-block; width: 40px; height: 40px; }
+        .dual-ring-loader:after { content: " "; display: block; width: 40px; height: 40px; border-radius: 50%; border: 4px solid #14b8a6; border-color: #14b8a6 transparent #14b8a6 transparent; animation: dual-ring 1.2s linear infinite; }
+        @keyframes dual-ring { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .blink-loader { display: flex; gap: 6px; }
+        .blink-loader div { width: 12px; height: 12px; background-color: #f59e0b; border-radius: 50%; animation: blink 1.4s infinite both; }
+        .blink-loader div:nth-child(1) { animation-delay: -0.32s; } .blink-loader div:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes blink { 0%, 80%, 100% { opacity: 0.2; } 40% { opacity: 1; } }
+
+        @keyframes fillBar { from { width: 0%; } }
+
+        /* Responsive Sidebar */
+        .mobile-overlay {
+            @apply hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 opacity-0 transition-opacity duration-300;
+        }
+        .mobile-overlay.show { @apply block opacity-100; }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed; top: 64px; left: 0; bottom: 0; z-index: 50; transform: translateX(-100%); transition: transform 0.3s ease;
+            }
+            .sidebar.open { transform: translateX(0); }
+            .content-area { padding: 24px 16px; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-slate-900 transition-colors duration-300 text-slate-900 dark:text-slate-100">
+
+    <!-- Navigation Bar (Consistent with V3.5) -->
+    <header class="h-16 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-4 sm:px-8 sticky top-0 z-50 transition-colors duration-300">
+        <!-- Left: Hamburger & Logo -->
+        <div class="flex items-center">
+            <button id="mobile-menu-button" class="md:hidden mr-4 text-slate-600 dark:text-slate-300 hover:text-blue-600 transition focus:outline-none">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            </button>
+            <a href="index.html" class="flex items-center">
+                <span class="text-xl font-bold tracking-tight text-blue-600 dark:text-blue-400">GitDelivr</span><span class="text-xl font-bold tracking-tight text-slate-900 dark:text-white">.in</span>
+            </a>
+        </div>
+
+        <!-- Middle: Desktop Navigation (Tools Dropdown) -->
+        <div class="hidden md:flex space-x-6 items-center mx-4">
+            <a href="cdn-generator.html" class="text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition text-sm">Tool</a>
+            
+            <!-- Tools Dropdown -->
+            <div class="relative group">
+                <button class="flex items-center text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition text-sm py-2 focus:outline-none">
+                    Tools
+                    <svg class="w-4 h-4 ml-1 text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
+
+                <div class="absolute left-0 mt-2 w-56 rounded-xl shadow-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 z-50">
+                    <div class="p-2 space-y-1">
+                        <a href="media-streamer.html" class="flex items-center px-3 py-2.5 rounded-lg text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 transition">
+                            Media Streamer
+                        </a>
+                        <a href="audio-streamer.html" class="flex items-center px-3 py-2.5 rounded-lg text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 transition">
+                            Audio Streamer
+                        </a>
+                        <a href="site-analyzer.html" class="flex items-center px-3 py-2.5 rounded-lg text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 transition">
+                            Site Analyzer
+                        </a>
+                        <a href="npm-setup.html" class="flex items-center px-3 py-2.5 rounded-lg text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 transition">
+                            NPM Guide
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <a href="index.html#features" class="text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition text-sm">Features</a>
+            <a href="index.html#how-it-works" class="text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition text-sm">How It Works</a>
+            <a href="index.html#faq" class="text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition text-sm">FAQ</a>
+            <a href="index.html#contact" class="text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition text-sm">Contact</a>
+            <a href="blog/index.html" class="text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition text-sm">Blog</a>
+        </div>
+
+        <!-- Right: Profile / Login -->
+        <div class="flex items-center">
+            <button id="topLoginBtn" onclick="openModal('loginModal')" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-bold shadow-md transition">
+                Login
+            </button>
+        </div>
+    </header>
+
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="opacity-0 invisible absolute w-full md:hidden bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 top-16 z-40 shadow-md transition-all duration-300">
+        <div class="px-4 pt-2 pb-4 space-y-2">
+            <a href="app.html" class="block px-3 py-2 rounded-md text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition">Download App</a>
+            <a href="cdn-generator.html" class="block px-3 py-2 rounded-md text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-slate-800 transition">Launch Tool</a>
+            
+            <!-- Mobile Tools Section -->
+            <div class="py-2 my-1 border-y border-slate-100 dark:border-slate-800">
+                <span class="block px-3 py-1 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Tools & Analyzers</span>
+                <a href="media-streamer.html" class="flex items-center px-3 py-2 rounded-md text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition">Media Streamer</a>
+                <a href="audio-streamer.html" class="flex items-center px-3 py-2 rounded-md text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition">Audio Streamer</a>
+                <a href="site-analyzer.html" class="flex items-center px-3 py-2 rounded-md text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition">Site Analyzer</a>
+                <a href="npm-setup.html" class="flex items-center px-3 py-2 rounded-md text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition">NPM Guide</a>
+            </div>
+
+            <a href="index.html#features" class="block px-3 py-2 rounded-md text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition">Features</a>
+            <a href="blog/index.html" class="block px-3 py-2 rounded-md text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition">Blog</a>
+            <button onclick="openModal('loginModal')" class="w-full text-left mt-2 block px-3 py-2.5 rounded-md text-sm font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-slate-800/50 transition">Login</button>
+        </div>
+    </div>
+
+    <!-- Main Docs Layout -->
+    <div class="mobile-overlay" id="mobile-overlay"></div>
+
+    <div class="docs-layout max-w-[1400px] mx-auto w-full">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <h2 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-6 pl-2">Docs Menu</h2>
+            <nav id="docs-nav" class="flex flex-col">
+                <button class="nav-btn active" data-target="video-doc">Video Stream</button>
+                <button class="nav-btn" data-target="audio-doc">Audio Stream</button>
+                <button class="nav-btn" data-target="image-doc">Image CDN</button>
+                <button class="nav-btn" data-target="file-doc">File Delivery</button>
+                <button class="nav-btn" data-target="css-doc">CSS Loaders</button>
+                <button class="nav-btn" data-target="cli-doc">CLI Tool</button>
+                <button class="nav-btn" data-target="bench-doc">CDN Benchmark</button>
+                <button class="nav-btn" data-target="features-doc">All Features</button>
+            </nav>
+        </aside>
+
+        <!-- Content Area -->
+        <main class="content-area">
+            
+            <section id="video-doc" class="doc-section active-section">
+                <h1 class="page-title">Video Stream Integration</h1>
+                <p class="page-description">Compare normal GitHub video hosting vs GitDelivr's optimized edge streaming.</p>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="step-card !mb-0 flex flex-col">
+                        <h3>1. Normal GitHub Link</h3>
+                        <p class="flex-grow">Standard GitHub link (Notice how it is <span class="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-2 py-0.5 rounded text-xs font-bold">slow and buffers heavily</span> due to missing chunked streaming & strict CORS limits):</p>
+                        
+                        <!-- NEW URL BAR UI: Normal Link -->
+                        <div class="flex items-start sm:items-center bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 mt-4 mb-4 relative shadow-inner">
+                            <span class="bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider mr-3 shrink-0 mt-0.5 sm:mt-0">RAW</span>
+                            <code class="text-[13px] text-slate-500 dark:text-slate-400 break-all font-mono pr-8">https://github.com/mdn/learning-area/blob/master/html/multimedia-and-embedding/video-and-audio-content/rabbit320.mp4</code>
+                            <button onclick="navigator.clipboard.writeText('https://github.com/mdn/learning-area/blob/master/html/multimedia-and-embedding/video-and-audio-content/rabbit320.mp4'); const icon = this.innerHTML; this.innerHTML='<svg class=\'w-4 h-4 text-green-500\' fill=\'none\' stroke=\'currentColor\' viewBox=\'0 0 24 24\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M5 13l4 4L19 7\'></path></svg>'; setTimeout(() => this.innerHTML = icon, 2000)" class="absolute right-2 top-2 sm:top-1/2 sm:-translate-y-1/2 p-1.5 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md transition-all shadow-sm" title="Copy URL">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            </button>
+                        </div>
+                        
+                        <video controls class="w-full mt-auto rounded-xl bg-black border border-slate-700 shadow-lg">
+                            <source src="https://raw.githubusercontent.com/mdn/learning-area/master/html/multimedia-and-embedding/video-and-audio-content/rabbit320.mp4" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
+                    </div>
+
+                    <div class="step-card !mb-0 flex flex-col">
+                        <h3>2. GitDelivr CDN Link</h3>
+                        <p class="flex-grow">Optimized Edge CDN link (Instant metadata loading, proper MIME types, and chunked streaming):</p>
+                        
+                        <!-- NEW URL BAR UI: CDN Link -->
+                        <div class="flex items-start sm:items-center bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/50 rounded-lg p-2.5 mt-4 mb-4 relative shadow-inner">
+                            <span class="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider mr-3 shrink-0 mt-0.5 sm:mt-0 border border-blue-200 dark:border-blue-800/50">CDN</span>
+                            <code class="text-[13px] text-slate-700 dark:text-slate-200 break-all font-mono pr-8">https://cdn.gitdelivr.in/gh/mdn/learning-area@master/html/multimedia-and-embedding/video-and-audio-content/rabbit320.mp4</code>
+                            <button onclick="navigator.clipboard.writeText('https://cdn.gitdelivr.in/gh/mdn/learning-area@master/html/multimedia-and-embedding/video-and-audio-content/rabbit320.mp4'); const icon = this.innerHTML; this.innerHTML='<svg class=\'w-4 h-4 text-green-500\' fill=\'none\' stroke=\'currentColor\' viewBox=\'0 0 24 24\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M5 13l4 4L19 7\'></path></svg>'; setTimeout(() => this.innerHTML = icon, 2000)" class="absolute right-2 top-2 sm:top-1/2 sm:-translate-y-1/2 p-1.5 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 bg-white dark:bg-slate-800 border border-blue-200 dark:border-blue-700 rounded-md transition-all shadow-sm" title="Copy URL">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            </button>
+                        </div>
+
+                        <video controls class="w-full mt-auto rounded-xl bg-black border border-slate-700 shadow-[0_0_20px_rgba(0,102,255,0.2)]">
+                            <source src="https://cdn.gitdelivr.in/gh/mdn/learning-area@master/html/multimedia-and-embedding/video-and-audio-content/rabbit320.mp4" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
+                    </div>
+                </div>
+            </section>
+
+            <section id="audio-doc" class="doc-section">
+                <h1 class="page-title">Audio Stream Integration</h1>
+                <p class="page-description">Compare normal GitHub audio hosting vs GitDelivr's optimized edge streaming.</p>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="step-card !mb-0 flex flex-col">
+                        <h3>1. Normal GitHub Link</h3>
+                        <p class="flex-grow">Standard GitHub link (Notice how it is <span class="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-2 py-0.5 rounded text-xs font-bold">slow and buffers heavily</span> due to missing chunked streaming & strict CORS limits):</p>
+                        
+                        <!-- NEW URL BAR UI: Normal Link -->
+                        <div class="flex items-start sm:items-center bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 mt-4 mb-4 relative shadow-inner">
+                            <span class="bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider mr-3 shrink-0 mt-0.5 sm:mt-0">RAW</span>
+                            <code class="text-[13px] text-slate-500 dark:text-slate-400 break-all font-mono pr-8">https://github.com/mdn/learning-area/blob/master/html/multimedia-and-embedding/video-and-audio-content/viper.mp3</code>
+                            <button onclick="navigator.clipboard.writeText('https://github.com/mdn/learning-area/blob/master/html/multimedia-and-embedding/video-and-audio-content/viper.mp3'); const icon = this.innerHTML; this.innerHTML='<svg class=\'w-4 h-4 text-green-500\' fill=\'none\' stroke=\'currentColor\' viewBox=\'0 0 24 24\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M5 13l4 4L19 7\'></path></svg>'; setTimeout(() => this.innerHTML = icon, 2000)" class="absolute right-2 top-2 sm:top-1/2 sm:-translate-y-1/2 p-1.5 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md transition-all shadow-sm" title="Copy URL">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            </button>
+                        </div>
+
+                        <audio controls class="w-full mt-auto rounded-lg shadow-sm">
+                            <source src="https://raw.githubusercontent.com/mdn/learning-area/master/html/multimedia-and-embedding/video-and-audio-content/viper.mp3" type="audio/mpeg">
+                        </audio>
+                    </div>
+
+                    <div class="step-card !mb-0 flex flex-col">
+                        <h3>2. GitDelivr CDN Link</h3>
+                        <p class="flex-grow">Optimized Edge CDN link (Instant metadata loading, proper MIME types, and chunked streaming):</p>
+                        
+                        <!-- NEW URL BAR UI: CDN Link -->
+                        <div class="flex items-start sm:items-center bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/50 rounded-lg p-2.5 mt-4 mb-4 relative shadow-inner">
+                            <span class="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider mr-3 shrink-0 mt-0.5 sm:mt-0 border border-blue-200 dark:border-blue-800/50">CDN</span>
+                            <code class="text-[13px] text-slate-700 dark:text-slate-200 break-all font-mono pr-8">https://cdn.gitdelivr.in/gh/mdn/learning-area@master/html/multimedia-and-embedding/video-and-audio-content/viper.mp3</code>
+                            <button onclick="navigator.clipboard.writeText('https://cdn.gitdelivr.in/gh/mdn/learning-area@master/html/multimedia-and-embedding/video-and-audio-content/viper.mp3'); const icon = this.innerHTML; this.innerHTML='<svg class=\'w-4 h-4 text-green-500\' fill=\'none\' stroke=\'currentColor\' viewBox=\'0 0 24 24\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M5 13l4 4L19 7\'></path></svg>'; setTimeout(() => this.innerHTML = icon, 2000)" class="absolute right-2 top-2 sm:top-1/2 sm:-translate-y-1/2 p-1.5 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 bg-white dark:bg-slate-800 border border-blue-200 dark:border-blue-700 rounded-md transition-all shadow-sm" title="Copy URL">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            </button>
+                        </div>
+
+                        <audio controls class="w-full mt-auto rounded-lg shadow-sm border border-blue-500/30">
+                            <source src="https://cdn.gitdelivr.in/gh/mdn/learning-area@master/html/multimedia-and-embedding/video-and-audio-content/viper.mp3" type="audio/mpeg">
+                        </audio>
+                    </div>
+                </div>
+            </section>
+
+            <section id="image-doc" class="doc-section">
+                <h1 class="page-title">Image CDN Integration</h1>
+                <p class="page-description">Compare normal GitHub image hosting vs GitDelivr's globally cached edge delivery.</p>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="step-card !mb-0 flex flex-col">
+                        <h3>1. Normal GitHub Link</h3>
+                        <p class="flex-grow">Standard GitHub link (Notice how raw GitHub imposes strict rate limits and short cache lifetimes):</p>
+                        
+                        <!-- NEW URL BAR UI: Normal Link -->
+                        <div class="flex items-start sm:items-center bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 mt-4 mb-4 relative shadow-inner">
+                            <span class="bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider mr-3 shrink-0 mt-0.5 sm:mt-0">RAW</span>
+                            <code class="text-[13px] text-slate-500 dark:text-slate-400 break-all font-mono pr-8">https://github.com/mdn/learning-area/blob/master/html/multimedia-and-embedding/images-in-html/dinosaur_small.jpg</code>
+                            <button onclick="navigator.clipboard.writeText('https://github.com/mdn/learning-area/blob/master/html/multimedia-and-embedding/images-in-html/dinosaur_small.jpg'); const icon = this.innerHTML; this.innerHTML='<svg class=\'w-4 h-4 text-green-500\' fill=\'none\' stroke=\'currentColor\' viewBox=\'0 0 24 24\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M5 13l4 4L19 7\'></path></svg>'; setTimeout(() => this.innerHTML = icon, 2000)" class="absolute right-2 top-2 sm:top-1/2 sm:-translate-y-1/2 p-1.5 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md transition-all shadow-sm" title="Copy URL">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            </button>
+                        </div>
+
+                        <div class="bg-slate-100 mt-auto dark:bg-slate-900/50 p-4 rounded-xl text-center border border-slate-200 dark:border-slate-700 flex flex-col justify-center h-[280px]">
+                            <img src="https://raw.githubusercontent.com/mdn/learning-area/master/html/multimedia-and-embedding/images-in-html/dinosaur_small.jpg" alt="Normal GitHub Image" class="max-w-full max-h-full object-contain rounded-lg shadow-md mx-auto">
+                        </div>
+                    </div>
+
+                    <div class="step-card !mb-0 flex flex-col">
+                        <h3>2. GitDelivr CDN Link</h3>
+                        <p class="flex-grow">Optimized Edge CDN link (Served from the nearest edge node with 1-year caching for instant loads):</p>
+                        
+                        <!-- NEW URL BAR UI: CDN Link -->
+                        <div class="flex items-start sm:items-center bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/50 rounded-lg p-2.5 mt-4 mb-4 relative shadow-inner">
+                            <span class="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider mr-3 shrink-0 mt-0.5 sm:mt-0 border border-blue-200 dark:border-blue-800/50">CDN</span>
+                            <code class="text-[13px] text-slate-700 dark:text-slate-200 break-all font-mono pr-8">https://cdn.gitdelivr.in/gh/mdn/learning-area@master/html/multimedia-and-embedding/images-in-html/dinosaur_small.jpg</code>
+                            <button onclick="navigator.clipboard.writeText('https://cdn.gitdelivr.in/gh/mdn/learning-area@master/html/multimedia-and-embedding/images-in-html/dinosaur_small.jpg'); const icon = this.innerHTML; this.innerHTML='<svg class=\'w-4 h-4 text-green-500\' fill=\'none\' stroke=\'currentColor\' viewBox=\'0 0 24 24\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M5 13l4 4L19 7\'></path></svg>'; setTimeout(() => this.innerHTML = icon, 2000)" class="absolute right-2 top-2 sm:top-1/2 sm:-translate-y-1/2 p-1.5 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 bg-white dark:bg-slate-800 border border-blue-200 dark:border-blue-700 rounded-md transition-all shadow-sm" title="Copy URL">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            </button>
+                        </div>
+
+                        <div class="bg-slate-100 mt-auto dark:bg-slate-900/50 p-4 rounded-xl text-center border border-slate-200 dark:border-slate-700 flex flex-col justify-center h-[280px]">
+                          <img src="https://cdn.gitdelivr.in/gh/mdn/learning-area@master/html/multimedia-and-embedding/images-in-html/dinosaur_small.jpg" alt="GitDelivr CDN Image" class="max-w-full max-h-full object-contain rounded-lg shadow-md mx-auto border border-blue-500/20">
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="file-doc" class="doc-section">
+                <h1 class="page-title">File Delivery (CSS/JS)</h1>
+                <p class="page-description">Compare raw GitHub file delivery vs GitDelivr's edge CDN delivery with proper MIME types.</p>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="step-card !mb-0 flex flex-col">
+                        <h3>1. Normal GitHub Link</h3>
+                        <p class="flex-grow">Standard raw GitHub link (Notice how browsers block it because GitHub forces a <code class="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded font-mono text-[0.9em]">text/plain</code> MIME type and strict <code class="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded font-mono text-[0.9em]">nosniff</code> headers):</p>
+                        
+                        <!-- NEW URL BAR UI: Normal Link -->
+                        <div class="flex items-start sm:items-center bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 mt-4 mb-4 relative shadow-inner">
+                            <span class="bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider mr-3 shrink-0 mt-0.5 sm:mt-0">RAW</span>
+                            <code class="text-[13px] text-slate-500 dark:text-slate-400 break-all font-mono pr-8">https://github.com/gitdelivr/demo/blob/main/style.css</code>
+                            <button onclick="navigator.clipboard.writeText('https://github.com/gitdelivr/demo/blob/main/style.css'); const icon = this.innerHTML; this.innerHTML='<svg class=\'w-4 h-4 text-green-500\' fill=\'none\' stroke=\'currentColor\' viewBox=\'0 0 24 24\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M5 13l4 4L19 7\'></path></svg>'; setTimeout(() => this.innerHTML = icon, 2000)" class="absolute right-2 top-2 sm:top-1/2 sm:-translate-y-1/2 p-1.5 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md transition-all shadow-sm" title="Copy URL">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            </button>
+                        </div>
+
+                        <div class="code-wrapper mt-auto">
+<pre class="whitespace-pre-wrap break-all"><code><span style="color: #64748b;">&lt;!-- Browser will refuse to apply --&gt;</span>
+<span class="code-tag">&lt;link</span> <span class="code-attr">rel</span>=<span class="code-string">"stylesheet"</span> <span class="code-attr">href</span>=<span class="code-string">"https://raw.github.../style.css"</span><span class="code-tag">&gt;</span></code></pre>
+                        </div>
+                    </div>
+
+                    <div class="step-card !mb-0 flex flex-col">
+                        <h3>2. GitDelivr CDN Link</h3>
+                        <p class="flex-grow">Optimized Edge CDN link (GitDelivr automatically detects extensions and serves the correct <code class="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded font-mono text-[0.9em]">text/css</code> or <code class="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded font-mono text-[0.9em]">application/js</code> MIME types):</p>
+                        
+                        <!-- NEW URL BAR UI: CDN Link -->
+                        <div class="flex items-start sm:items-center bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/50 rounded-lg p-2.5 mt-4 mb-4 relative shadow-inner">
+                            <span class="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider mr-3 shrink-0 mt-0.5 sm:mt-0 border border-blue-200 dark:border-blue-800/50">CDN</span>
+                            <code class="text-[13px] text-slate-700 dark:text-slate-200 break-all font-mono pr-8">https://cdn.gitdelivr.in/gh/gitdelivr/demo@main/style.css</code>
+                            <button onclick="navigator.clipboard.writeText('https://cdn.gitdelivr.in/gh/gitdelivr/demo@main/style.css'); const icon = this.innerHTML; this.innerHTML='<svg class=\'w-4 h-4 text-green-500\' fill=\'none\' stroke=\'currentColor\' viewBox=\'0 0 24 24\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M5 13l4 4L19 7\'></path></svg>'; setTimeout(() => this.innerHTML = icon, 2000)" class="absolute right-2 top-2 sm:top-1/2 sm:-translate-y-1/2 p-1.5 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 bg-white dark:bg-slate-800 border border-blue-200 dark:border-blue-700 rounded-md transition-all shadow-sm" title="Copy URL">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            </button>
+                        </div>
+
+                        <div class="code-wrapper mt-auto">
+<pre class="whitespace-pre-wrap break-all"><code><span style="color: #64748b;">&lt;!-- Browser applies stylesheet instantly --&gt;</span>
+<span class="code-tag">&lt;link</span> <span class="code-attr">rel</span>=<span class="code-string">"stylesheet"</span> <span class="code-attr">href</span>=<span class="code-string">"https://cdn.gitde.../style.css"</span><span class="code-tag">&gt;</span></code></pre>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="css-doc" class="doc-section">
+                <h1 class="page-title">CSS Loaders Integration</h1>
+                <p class="page-description">Instantly add beautiful, lightweight CSS loaders to your project using GitDelivr CDN. No JavaScript required!</p>
+
+                <div class="step-card">
+                    <h3>Step 1: Import the Stylesheet</h3>
+                    <p>Add this link tag to your HTML <code class="bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded font-mono">&lt;head&gt;</code> to load the CSS animations instantly from the Edge CDN:</p>
+                    <div class="code-wrapper">
+<pre><code><span class="code-tag">&lt;link</span> <span class="code-attr">rel</span>=<span class="code-string">"stylesheet"</span> <span class="code-attr">href</span>=<span class="code-string">"https://cdn.gitdelivr.in/gh/gitdelivr/demo@main/loaders.css"</span><span class="code-tag">&gt;</span></code></pre>
+                    </div>
+                </div>
+
+                <h3 class="text-xl font-bold text-slate-900 dark:text-white mt-10 mb-2">Step 2: Choose Your Loader</h3>
+                <p class="text-slate-600 dark:text-slate-400 mb-6">Copy the HTML snippet of the loader you want to use.</p>
+
+                <div class="loader-grid">
+                    <!-- Loader 1 -->
+                    <div class="loader-card group hover:border-blue-500/50 transition-colors">
+                        <div class="loader-display">
+                            <div class="spin-loader"></div>
+                        </div>
+                        <h4 class="font-bold text-slate-900 dark:text-white mb-3">Classic Spinner</h4>
+                        <div class="code-wrapper w-full p-3">
+                            <code><span class="code-tag">&lt;div</span> <span class="code-attr">class</span>=<span class="code-string">"spin-loader"</span><span class="code-tag">&gt;&lt;/div&gt;</span></code>
+                        </div>
+                    </div>
+
+                    <!-- Loader 2 -->
+                    <div class="loader-card group hover:border-blue-500/50 transition-colors">
+                        <div class="loader-display">
+                            <div class="pulse-loader"><div></div><div></div><div></div></div>
+                        </div>
+                        <h4 class="font-bold text-slate-900 dark:text-white mb-3">Pulse Dots</h4>
+                        <div class="code-wrapper w-full p-3">
+                            <code><span class="code-tag">&lt;div</span> <span class="code-attr">class</span>=<span class="code-string">"pulse-loader"</span><span class="code-tag">&gt;</span>
+  <span class="code-tag">&lt;div&gt;&lt;/div&gt;&lt;div&gt;&lt;/div&gt;&lt;div&gt;&lt;/div&gt;</span>
+<span class="code-tag">&lt;/div&gt;</span></code>
+                        </div>
+                    </div>
+
+                    <!-- Loader 3 -->
+                    <div class="loader-card group hover:border-blue-500/50 transition-colors">
+                        <div class="loader-display">
+                            <div class="bar-loader"><div></div><div></div><div></div></div>
+                        </div>
+                        <h4 class="font-bold text-slate-900 dark:text-white mb-3">Bouncing Bars</h4>
+                        <div class="code-wrapper w-full p-3">
+                            <code><span class="code-tag">&lt;div</span> <span class="code-attr">class</span>=<span class="code-string">"bar-loader"</span><span class="code-tag">&gt;</span>
+  <span class="code-tag">&lt;div&gt;&lt;/div&gt;&lt;div&gt;&lt;/div&gt;&lt;div&gt;&lt;/div&gt;</span>
+<span class="code-tag">&lt;/div&gt;</span></code>
+                        </div>
+                    </div>
+
+                    <!-- Loader 4 -->
+                    <div class="loader-card group hover:border-blue-500/50 transition-colors">
+                        <div class="loader-display">
+                            <div class="wave-loader"><div></div><div></div><div></div><div></div><div></div></div>
+                        </div>
+                        <h4 class="font-bold text-slate-900 dark:text-white mb-3">Wave Loader</h4>
+                        <div class="code-wrapper w-full p-3">
+                            <code><span class="code-tag">&lt;div</span> <span class="code-attr">class</span>=<span class="code-string">"wave-loader"</span><span class="code-tag">&gt;</span>
+  <span class="code-tag">&lt;div&gt;&lt;/div&gt;&lt;div&gt;&lt;/div&gt;&lt;div&gt;&lt;/div&gt;&lt;div&gt;&lt;/div&gt;&lt;div&gt;&lt;/div&gt;</span>
+<span class="code-tag">&lt;/div&gt;</span></code>
+                        </div>
+                    </div>
+
+                    <!-- Loader 5 -->
+                    <div class="loader-card group hover:border-blue-500/50 transition-colors">
+                        <div class="loader-display">
+                            <div class="dual-ring-loader"></div>
+                        </div>
+                        <h4 class="font-bold text-slate-900 dark:text-white mb-3">Dual Ring</h4>
+                        <div class="code-wrapper w-full p-3">
+                            <code><span class="code-tag">&lt;div</span> <span class="code-attr">class</span>=<span class="code-string">"dual-ring-loader"</span><span class="code-tag">&gt;&lt;/div&gt;</span></code>
+                        </div>
+                    </div>
+
+                    <!-- Loader 6 -->
+                    <div class="loader-card group hover:border-blue-500/50 transition-colors">
+                        <div class="loader-display">
+                            <div class="blink-loader"><div></div><div></div><div></div></div>
+                        </div>
+                        <h4 class="font-bold text-slate-900 dark:text-white mb-3">Blinking Dots</h4>
+                        <div class="code-wrapper w-full p-3">
+                            <code><span class="code-tag">&lt;div</span> <span class="code-attr">class</span>=<span class="code-string">"blink-loader"</span><span class="code-tag">&gt;</span>
+  <span class="code-tag">&lt;div&gt;&lt;/div&gt;&lt;div&gt;&lt;/div&gt;&lt;div&gt;&lt;/div&gt;</span>
+<span class="code-tag">&lt;/div&gt;</span></code>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="cli-doc" class="doc-section">
+                <h1 class="page-title">CLI Tool Integration</h1>
+                <p class="page-description">Generate optimized CDN links directly from your terminal using the GitDelivr NPM package.</p>
+
+                <div class="step-card">
+                    <h3>Step 1: Global Installation</h3>
+                    <p>Install the GitDelivr CLI tool globally via NPM to access it from anywhere in your system:</p>
+                    <div class="code-wrapper border-l-4 border-blue-500">
+<pre><code><span style="color: #4ade80;">$</span> <span style="color: #f8fafc;">npm install -g gitdelivr-cli</span></code></pre>
+                    </div>
+                </div>
+
+                <div class="step-card">
+                    <h3>Step 2: Generate Links</h3>
+                    <p>Run the <code class="bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded font-mono text-[0.9em]">gitdelivr</code> command followed by the GitHub repository and file path:</p>
+                    <div class="code-wrapper">
+<pre><code><span style="color: #4ade80;">$</span> <span style="color: #f8fafc;">gitdelivr generate gitdelivr/demo main src/app.js</span>
+
+<span style="color: #64748b;">> Fetching file details from GitHub API...</span>
+<span class="code-tag">> GitDelivr CDN Link:</span>
+<span class="code-string">https://cdn.gitdelivr.in/gh/gitdelivr/demo@main/src/app.js</span>
+
+<span style="color: #10b981;">✔ Successfully copied to clipboard!</span></code></pre>
+                    </div>
+                </div>
+
+                <div class="step-card">
+                    <h3>Available Commands</h3>
+                    <p>The CLI supports multiple operations for different providers (NPM, GitLab, WordPress):</p>
+                    <div class="code-wrapper">
+<pre><code><span style="color: #4ade80;">$</span> <span style="color: #f8fafc;">gitdelivr --help</span>
+
+<span class="code-tag">Commands:</span>
+  generate &lt;repo&gt; &lt;branch&gt; &lt;file&gt;   <span style="color: #64748b;">Generate a standard GitHub CDN link</span>
+  npm &lt;package&gt; &lt;file&gt;              <span style="color: #64748b;">Generate an NPM registry link</span>
+  sri &lt;url&gt;                         <span style="color: #64748b;">Calculate Subresource Integrity hash</span>
+  purge &lt;url&gt;                       <span style="color: #64748b;">Clear edge cache for a specific URL</span></code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <section id="bench-doc" class="doc-section">
+                <h1 class="page-title">CDN Benchmark Test</h1>
+                <p class="page-description">See the real-world performance difference between raw repository hosting and GitDelivr's Edge CDN.</p>
+
+                <div class="step-card">
+                    <h3>Global Latency Comparison (TTFB)</h3>
+                    <p>Time To First Byte (TTFB) determines how fast the server responds to the user's browser. Lower is better.</p>
+                    
+                    <div class="mt-8 flex flex-col gap-6">
+                        <div>
+                            <div class="flex justify-between mb-2 text-sm">
+                                <span class="font-bold text-slate-700 dark:text-slate-300">Normal GitHub (Raw)</span>
+                                <span class="font-mono text-red-500 font-bold">~250ms - 800ms</span>
+                            </div>
+                            <div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-3 overflow-hidden">
+                                <div class="bg-red-500 h-full rounded-full w-[85%] animate-[fillBar_1.5s_ease-out]"></div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <div class="flex justify-between mb-2 text-sm">
+                                <span class="font-bold text-slate-900 dark:text-white">GitDelivr Edge CDN</span>
+                                <span class="font-mono text-emerald-500 font-bold">~10ms - 30ms</span>
+                            </div>
+                            <div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-3 overflow-hidden">
+                                <div class="bg-emerald-500 h-full rounded-full w-[15%] animate-[fillBar_1s_ease-out]"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step-card">
+                    <h3>Throughput & Infrastructure</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+                        <div class="bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 p-4 rounded-xl text-center">
+                            <h4 class="text-xs uppercase text-slate-500 dark:text-slate-400 font-bold mb-2">Cache HIT Ratio</h4>
+                            <p class="text-3xl font-black text-blue-500">98.4%</p>
+                        </div>
+                        <div class="bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 p-4 rounded-xl text-center">
+                            <h4 class="text-xs uppercase text-slate-500 dark:text-slate-400 font-bold mb-2">Global PoPs</h4>
+                            <p class="text-3xl font-black text-purple-500">300+</p>
+                        </div>
+                        <div class="bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 p-4 rounded-xl text-center">
+                            <h4 class="text-xs uppercase text-slate-500 dark:text-slate-400 font-bold mb-2">CORS Support</h4>
+                            <p class="text-3xl font-black text-emerald-500">Native</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center mt-10 mb-6">
+                    <a href="speed-tester.html" class="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-blue-500/30 transition-all hover:-translate-y-1">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        Run Live Speed Test
+                    </a>
+                </div>
+            </section>
+
+            <section id="features-doc" class="doc-section">
+                <h1 class="page-title">All Features Matrix</h1>
+                <p class="page-description">A complete overview of the GitDelivr ecosystem, advanced capabilities, and integrated tools.</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    
+                    <div class="step-card !mb-0 hover:border-blue-500/30 transition-colors">
+                        <div class="flex items-center gap-3 mb-3">
+                            <h3 class="!mb-0 leading-tight">Global Edge Network</h3>
+                        </div>
+                        <p class="!mb-0">Backed by Cloudflare's 300+ global PoPs. Assets are cached locally near the user for sub-10ms TTFB.</p>
+                    </div>
+
+                    <div class="step-card !mb-0 hover:border-blue-500/30 transition-colors">
+                        <div class="flex items-center gap-3 mb-3">
+                            <h3 class="!mb-0 leading-tight">Native CORS Bypass</h3>
+                        </div>
+                        <p class="!mb-0">Automatically injects <code class="bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded font-mono text-[0.9em]">Access-Control-Allow-Origin: *</code> headers. No more blocked cross-origin requests.</p>
+                    </div>
+
+                    <div class="step-card !mb-0 hover:border-blue-500/30 transition-colors">
+                        <div class="flex items-center gap-3 mb-3">
+                            <h3 class="!mb-0 leading-tight">NPM & WP Support</h3>
+                        </div>
+                        <p class="!mb-0">Fetch directly from NPM registries and WordPress SVN. Specify versions seamlessly (e.g., <code class="bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded font-mono text-[0.9em]">react@18.2.0</code>).</p>
+                    </div>
+
+                    <div class="step-card !mb-0 hover:border-blue-500/30 transition-colors">
+                        <div class="flex items-center gap-3 mb-3">
+                            <h3 class="!mb-0 leading-tight">SRI Hash Generation</h3>
+                        </div>
+                        <p class="!mb-0">Generates Subresource Integrity (SHA-384) hashes instantly to ensure your files are never tampered with.</p>
+                    </div>
+
+                    <div class="step-card !mb-0 hover:border-blue-500/30 transition-colors">
+                        <div class="flex items-center gap-3 mb-3">
+                            <h3 class="!mb-0 leading-tight">Chunked Media Streaming</h3>
+                        </div>
+                        <p class="!mb-0">Perfectly supports byte-range requests (<code class="bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded font-mono text-[0.9em]">206 Partial Content</code>) for zero-buffering video and audio playback.</p>
+                    </div>
+
+                    <div class="step-card !mb-0 hover:border-blue-500/30 transition-colors">
+                        <div class="flex items-center gap-3 mb-3">
+                            <h3 class="!mb-0 leading-tight">MIME Type Correction</h3>
+                        </div>
+                        <p class="!mb-0">Fixes GitHub's <code class="bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded font-mono text-[0.9em]">text/plain</code> problem. JS, CSS, and media are served with their proper executable MIME types.</p>
+                    </div>
+
+                </div>
+
+                <div class="mt-8 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm transition-colors duration-300">
+                    <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                        <svg class="w-6 h-6 text-green-500 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                        How to Use SRI Hashes
+                    </h3>
+                    <p class="text-slate-600 dark:text-slate-400 text-sm mb-6 leading-relaxed">Using SRI is easy. Just add the <code>integrity</code> and <code>crossorigin</code> attributes to your HTML tags.</p>
+
+                    <!-- Example 1: JavaScript -->
+                    <div class="mb-6">
+                        <h4 class="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 text-[11px]">Example 1: JavaScript</h4>
+                        <div class="code-wrapper w-full">
+<pre><code><span class="code-tag">&lt;script</span> <span class="code-attr">src</span>=<span class="code-string">"https://cdn.gitdelivr.in/gh/user/repo@main/app.js"</span>
+        <span class="code-attr">integrity</span>=<span class="code-string">"sha384-oqVuAfXRRu7n041F2ZOsHw..."</span>
+        <span class="code-attr">crossorigin</span>=<span class="code-string">"anonymous"</span><span class="code-tag">&gt;&lt;/script&gt;</span></code></pre>
+                        </div>
+                    </div>
+
+                    <!-- Example 2: CSS -->
+                    <div class="mb-6">
+                        <h4 class="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 text-[11px]">Example 2: CSS Stylesheet</h4>
+                        <div class="code-wrapper w-full">
+<pre><code><span class="code-tag">&lt;link</span> <span class="code-attr">rel</span>=<span class="code-string">"stylesheet"</span> <span class="code-attr">href</span>=<span class="code-string">"https://cdn.gitdelivr.in/gh/user/repo@main/style.css"</span>
+      <span class="code-attr">integrity</span>=<span class="code-string">"sha384-xyz123..."</span>
+      <span class="code-attr">crossorigin</span>=<span class="code-string">"anonymous"</span><span class="code-tag">&gt;</span></code></pre>
+                        </div>
+                    </div>
+
+                    <!-- Example 3: Media -->
+                    <div>
+                        <h4 class="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 text-[11px]">Example 3: Video/Audio Media</h4>
+                        <div class="code-wrapper w-full">
+<pre><code><span class="code-tag">&lt;video</span> <span class="code-attr">controls</span> <span class="code-attr">preload</span>=<span class="code-string">"metadata"</span>
+       <span class="code-attr">integrity</span>=<span class="code-string">"sha384-abc987..."</span>
+       <span class="code-attr">crossorigin</span>=<span class="code-string">"anonymous"</span><span class="code-tag">&gt;</span>
+  <span class="code-tag">&lt;source</span> <span class="code-attr">src</span>=<span class="code-string">"https://cdn.gitdelivr.in/gh/user/repo@main/video.mp4"</span><span class="code-tag">&gt;</span>
+<span class="code-tag">&lt;/video&gt;</span></code></pre>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <footer class="mt-16 pt-8 pb-4 border-t border-slate-200 dark:border-slate-800 w-full flex flex-col items-center">
+                <nav class="flex flex-wrap justify-center gap-x-6 gap-y-4 mb-4 text-center">
+                    <a href="index.html#features" class="text-sm font-medium text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Features</a>
+                    <a href="index.html#how-it-works" class="text-sm font-medium text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">How It Works</a>
+                    <a href="index.html#faq" class="text-sm font-medium text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">FAQ</a>
+                    <a href="index.html#contact" class="text-sm font-medium text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Contact</a>
+                </nav>
+                <p class="text-xs text-slate-400">&copy; 2026 GitDelivr.in. All rights reserved.</p>
+            </footer>
+
+        </main>
+    </div>
+
+    <!-- Login Modal (Popup) -->
+    <div id="loginModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm hidden z-[9999] flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 w-full max-w-md rounded-3xl shadow-2xl p-8 relative">
+            <button onclick="closeModal('loginModal')" class="absolute top-5 right-5 text-slate-400 hover:text-slate-800 dark:hover:text-white transition">✕</button>
+            <div id="loginView" class="text-center">
+                <h2 class="text-2xl font-bold mb-2 text-slate-900 dark:text-white">Welcome Back</h2>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">Login to generate links and save history.</p>
+                <button type="button" class="w-full mb-3 flex items-center justify-center gap-3 bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-900 font-bold py-3 rounded-xl transition">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd" /></svg>
+                    Continue with GitHub
+                </button>
+                <div class="flex items-center my-4">
+                    <div class="flex-grow border-t border-slate-200 dark:border-slate-700"></div>
+                    <span class="px-3 text-xs text-slate-400 uppercase">Or</span>
+                    <div class="flex-grow border-t border-slate-200 dark:border-slate-700"></div>
+                </div>
+                <form onsubmit="event.preventDefault();">
+                    <input type="email" placeholder="Email" class="w-full p-3 mb-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="password" placeholder="Password" class="w-full p-3 mb-4 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition">Login</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Back to Top Button -->
+    <button id="backToTopBtn" class="fixed bottom-6 right-6 sm:bottom-10 sm:right-10 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg shadow-blue-500/30 opacity-0 translate-y-10 pointer-events-none transition-all duration-300 z-40 focus:outline-none hover:-translate-y-1" aria-label="Back to top">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
+    </button>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Navigation Logic ---
+            const navButtons = document.querySelectorAll('.nav-btn');
+            const docSections = document.querySelectorAll('.doc-section');
+            const mobileOverlay = document.getElementById('mobile-overlay');
+            const hamburgerBtn = document.getElementById('mobile-menu-button');
+            const sidebar = document.querySelector('.sidebar');
+            const menuIcon = document.getElementById('menu-icon');
+            const mobileMenu = document.getElementById('mobile-menu');
+
+            function toggleSidebar() {
+                sidebar.classList.toggle('open');
+                if (sidebar.classList.contains('open')) {
+                    mobileOverlay.classList.add('show');
+                } else {
+                    mobileOverlay.classList.remove('show');
+                }
+            }
+
+            // Top Mobile Menu
+            hamburgerBtn.addEventListener('click', () => {
+                if (window.innerWidth <= 768) {
+                    // Decide if we are showing the sidebar or the top nav
+                    // For docs page, showing sidebar is more important, but let's sync them
+                    toggleSidebar();
+                }
+            });
+            mobileOverlay.addEventListener('click', toggleSidebar);
+
+            navButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    navButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    docSections.forEach(section => section.classList.remove('active-section'));
+                    
+                    const targetId = button.getAttribute('data-target');
+                    const targetSection = document.getElementById(targetId);
+                    
+                    if (targetSection) {
+                        targetSection.classList.add('active-section');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                    if (window.innerWidth <= 768) { toggleSidebar(); }
+                });
+            });
+
+            // --- Back to Top ---
+            const backToTopBtn = document.getElementById('backToTopBtn');
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 300) {
+                    backToTopBtn.classList.remove('opacity-0', 'translate-y-10', 'pointer-events-none');
+                    backToTopBtn.classList.add('opacity-100', 'translate-y-0');
+                } else {
+                    backToTopBtn.classList.add('opacity-0', 'translate-y-10', 'pointer-events-none');
+                    backToTopBtn.classList.remove('opacity-100', 'translate-y-0');
+                }
+            });
+            backToTopBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+            // --- Global Copy to Clipboard ---
+            document.querySelectorAll('.code-wrapper').forEach(wrapper => {
+                // Ignore the new URL bars since they have their own inline copy logic
+                if (wrapper.tagName.toLowerCase() !== 'div' || !wrapper.classList.contains('code-wrapper')) return;
+                
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'copy-btn';
+                copyBtn.title = 'Copy to clipboard';
+                copyBtn.innerHTML = `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>`;
+                
+                copyBtn.addEventListener('click', async () => {
+                    const codeEl = wrapper.querySelector('code');
+                    if (!codeEl) return;
+                    
+                    try {
+                        await navigator.clipboard.writeText(codeEl.innerText.trim());
+                        copyBtn.innerHTML = `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #4ade80;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
+                        copyBtn.style.background = 'rgba(74, 222, 128, 0.1)';
+                        copyBtn.style.borderColor = 'rgba(74, 222, 128, 0.3)';
+                        
+                        setTimeout(() => {
+                            copyBtn.innerHTML = `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>`;
+                            copyBtn.style.background = '';
+                            copyBtn.style.borderColor = '';
+                        }, 2000);
+                    } catch (err) { console.error('Failed to copy', err); }
+                });
+                wrapper.appendChild(copyBtn);
+            });
+        });
+
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+    </script>
+</body>
+</html>

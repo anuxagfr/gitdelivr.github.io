@@ -1,0 +1,106 @@
+---
+title: NPM Setup Guide
+description: Learn how to serve NPM packages directly in the browser using GitDelivr's global edge CDN.
+---
+
+# NPM Setup Guide
+
+Welcome to **GitDelivr.in**! Say goodbye to complex build tools and bundlers. GitDelivr provides a blazing-fast, reliable global edge CDN that allows you to serve NPM packages directly to the browser.
+
+Whether you're quickly prototyping in a CodePen, building a lightweight frontend, or deploying to production, GitDelivr delivers your dependencies with ultra-low latency.
+
+---
+
+## Base URL Structure
+
+Accessing any file from the NPM registry is straightforward. Use the following URL format:
+
+```text
+https://gitdelivr.in/npm/[package-name]@[version]/[file-path]
+```
+
+### Parameters Explained:
+* **`[package-name]`**: The exact name of the package on NPM (e.g., `react`, `lodash`, `@angular/core`).
+* **`[version]`**: The version of the package you want to load (e.g., `18.2.0`, `latest`).
+* **`[file-path]`**: The specific path to the file inside the package (e.g., `umd/react.production.min.js`).
+
+---
+
+## Usage Examples
+
+Here are a few practical ways to include GitDelivr in your everyday workflow.
+
+### 1. Loading via HTML `<script>` Tag
+You can load libraries globally using standard script tags. Here is how you can load React and ReactDOM for production:
+
+```html
+<!-- Load React -->
+<script src="https://gitdelivr.in/npm/react@18.2.0/umd/react.production.min.js"></script>
+
+<!-- Load ReactDOM -->
+<script src="https://gitdelivr.in/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+
+<script>
+  console.log("React is ready!", window.React);
+</script>
+```
+
+### 2. Importing as an ES Module
+Modern browsers support ES Modules natively. You can import modules directly into your JavaScript files:
+
+```javascript
+import confetti from 'https://gitdelivr.in/npm/canvas-confetti@1.9.2/dist/confetti.module.mjs';
+
+// Trigger a confetti explosion!
+confetti({
+  particleCount: 100,
+  spread: 70,
+  origin: { y: 0.6 }
+});
+```
+
+### 3. Loading a CSS Framework
+GitDelivr is great for delivering stylesheets. Here is how to include Tailwind CSS directly via a `<link>` tag:
+
+```html
+<link rel="stylesheet" href="https://gitdelivr.in/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+```
+
+---
+
+## Versioning Rules
+
+We highly recommend specifying versions to ensure your site remains stable over time. GitDelivr supports standard Semantic Versioning (SemVer):
+
+* **Exact Version (Recommended)**: `react@18.2.0`
+  * *Best for production. Guarantees your app won't break if a new major update is released.*
+* **Minor/Patch Ranges**: `vue@3.2` or `vue@^3.2.0`
+  * *Automatically resolves to the latest compatible minor or patch version.*
+* **Latest Version**: `jquery@latest` 
+  * *Always fetches the newest version available. Great for testing, but use with caution in production.*
+
+---
+
+## Default Files (Shorthand)
+
+Want to save some typing? If you omit the `[file-path]`, GitDelivr will automatically serve the default entry file defined in the package's `package.json` (usually the `unpkg`, `jsdelivr`, or `main` field).
+
+For example, loading jQuery is as simple as:
+
+```html
+<!-- Automatically serves the default distribution file (e.g., dist/jquery.min.js) -->
+<script src="https://gitdelivr.in/npm/jquery@3.7.1"></script>
+```
+
+---
+
+## Why Choose GitDelivr?
+
+* **🌍 Global Edge Caching**: Assets are distributed across 110+ Points of Presence (PoPs) worldwide, ensuring single-digit millisecond latency no matter where your users are located.
+* **⚡ Zero Configuration**: No build steps, no webpack, no bundlers. Just copy, paste, and code.
+* **🛡️ High Uptime**: Built on top of robust, enterprise-grade cloud infrastructure to guarantee your dependencies are always available.
+* **🔓 CORS Resolved**: We handle all Cross-Origin Resource Sharing headers automatically, making integration entirely frictionless.
+
+---
+
+*Ready to build something amazing? Try dropping a GitDelivr link into your project today!*

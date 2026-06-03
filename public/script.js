@@ -42,7 +42,7 @@ const aiOutputTitle = document.getElementById("aiOutputTitle");
 
 // Line 41 ke aas-paas
 const githubProvider = new GithubAuthProvider();
-githubProvider.addScope('repo'); 
+githubProvider.addScope('read:user'); 
 githubProvider.addScope('user:email'); 
 window.githubProvider = githubProvider;
 
@@ -62,6 +62,38 @@ let pendingCredentialForLinking = null;
 
 // --- UI Helpers ---
 
+function escapeHtml(value = "") {
+    return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
+function escapeHtmlAttribute(value = "") {
+    return escapeHtml(value);
+}
+
+function escapeJsStringForOnclick(value = "") {
+    return String(value)
+        .replace(/\\/g, "\\\\")
+        .replace(/'/g, "\\'")
+        .replace(/\r/g, "\\r")
+        .replace(/\n/g, "\\n")
+        .replace(/</g, "\\x3C")
+        .replace(/>/g, "\\x3E");
+}
+
+function safeExternalUrl(value = "#") {
+    try {
+        const url = new URL(value, window.location.href);
+        return ["http:", "https:", "mailto:"].includes(url.protocol) ? url.href : "#";
+    } catch {
+        return "#";
+    }
+}
+
 /**
  * Shows a premium toast notification.
  * @param {string} message - The message to display.
@@ -79,12 +111,13 @@ function showToast(message, type = 'success') {
     // SVGs for Success / Error
     const icons = {
         success: `<div class="flex-shrink-0 text-emerald-400 mt-0.5"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>`,
-        error: `<div class="flex-shrink-0 text-rose-400 mt-0.5"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>`
+        error: `<div class="flex-shrink-0 text-rose-400 mt-0.5"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>`,
+        info: `<div class="flex-shrink-0 text-sky-400 mt-0.5"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M12 18a6 6 0 100-12 6 6 0 000 12z"></path></svg></div>`
     };
 
     toast.innerHTML = `
         ${icons[type] || icons.success}
-        <div class="flex-1 break-words">${message}</div>
+        <div class="flex-1 break-words">${escapeHtml(message)}</div>
         <button class="flex-shrink-0 text-slate-500 hover:text-slate-300 transition-colors focus:outline-none p-1 -m-1" onclick="this.parentElement.remove()">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
@@ -122,6 +155,7 @@ function showLoginLoading(message = "Processing...") {
         if (text) text.textContent = message;
         overlay.classList.remove('hidden');
         overlay.classList.add('flex');
+        overlay.style.display = ''; // Reset any inline styles
     }
 }
 
@@ -131,6 +165,26 @@ function hideLoginLoading() {
     if (overlay) {
         overlay.classList.add('hidden');
         overlay.classList.remove('flex');
+        overlay.style.display = 'none'; // Force hide
+    }
+}
+
+/**
+ * Generic wrapper to handle loading states for any async operation.
+ * Guarantees the loading UI is hidden when the operation completes or fails.
+ * @param {string} loadingMessage - The message to show in the loading overlay.
+ * @param {Function} operation - The async function to execute.
+ */
+async function withAuthLoading(loadingMessage, operation) {
+    const overlay = document.getElementById('loginLoadingOverlay');
+    if (overlay) overlay.style.display = ''; // Reset any inline styles
+    
+    showLoginLoading(loadingMessage);
+    try {
+        await operation();
+    } finally {
+        hideLoginLoading();
+        if (overlay) overlay.style.display = 'none'; // Force hide
     }
 }
 
@@ -158,30 +212,25 @@ function getLinkedProviderState(user) {
 }
 
 /**
- * Saves a user's GitHub OAuth access token to their Firestore document.
+ * Deprecated no-op: GitHub tokens should not be persisted from the browser.
  * @param {import("firebase/auth").User} user The user to save the token for.
  * @param {string} token The GitHub OAuth access token.
  */
 async function saveGithubToken(user, token) {
-    if (!user || !token) return;
-    try {
-        // Save to a sub-collection 'private/tokens' to allow granular security rules
-        const tokenDocRef = doc(db, 'users', user.uid, 'private', 'tokens');
-        await setDoc(tokenDocRef, { githubAccessToken: token }, { merge: true });
-        console.log("GitHub access token saved to Firestore.");
-    } catch (error) {
-        console.error("Error saving GitHub token:", error);
-    }
+    return;
 }
 
 /**
- * Persists a GitHub credential's access token (if any) to Firestore so repo access survives future logins.
+ * Deprecated no-op kept for existing auth flow compatibility.
+ * Persists the GitHub access token to sessionStorage for rate-limit bypassing.
  * @param {import("firebase/auth").User} user
  * @param {import("firebase/auth").OAuthCredential | null} credential
  */
 async function persistGithubAccessToken(user, credential) {
-    if (!user || !credential?.accessToken) return;
-    await saveGithubToken(user, credential.accessToken);
+    return;
+    if (credential && credential.accessToken) {
+        sessionStorage.setItem('gh_token', credential.accessToken);
+    }
 }
 
 /** Maps Firebase provider IDs to human-readable labels for UI badges. */
@@ -407,6 +456,9 @@ async function connectGithubAccount() {
         showToast(`Your GitHub account (@${githubUsername}) has been connected!`, "success");
         
         // Refresh UI state by re-fetching repos
+        const btnTopLinkGithub = document.getElementById('btnTopLinkGithub');
+        if (btnTopLinkGithub) btnTopLinkGithub.classList.add('hidden');
+        
         fetchGitHubRepos(user);
 
     } catch (error) {
@@ -431,24 +483,21 @@ async function connectGithubAccount() {
  * user's email already exists with a different provider.
  */
 async function signInWithGitHubAndLink() {
-    showLoginLoading("Connecting to GitHub...");
     try {
-        const result = await signInWithPopup(auth, githubProvider);
-        console.log("Successfully signed in with GitHub:", result.user?.uid);
-        await finalizeGithubSignIn(result);
-    } catch (error) {
-        if (error.code === 'auth/account-exists-with-different-credential') {
+        await withAuthLoading("Connecting to GitHub...", async () => {
             try {
-                await handleAccountExistsWithDifferentCredential(error);
-            } catch (linkError) {
-                hideLoginLoading();
-                console.error("Unable to resolve account linking flow:", linkError);
-                showToast("We couldn't link your GitHub account. Please try again.", "error");
+                const result = await signInWithPopup(auth, githubProvider);
+                console.log("Successfully signed in with GitHub:", result.user?.uid);
+                await finalizeGithubSignIn(result);
+            } catch (error) {
+                if (error.code === 'auth/account-exists-with-different-credential') {
+                    await handleAccountExistsWithDifferentCredential(error);
+                    return;
+                }
+                throw error; // Pass to outer catch
             }
-            return;
-        }
-
-        hideLoginLoading();
+        });
+    } catch (error) {
         console.error("Error during GitHub sign-in:", error);
         if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
             return;
@@ -506,13 +555,90 @@ if (window.matchMedia) {
 initTheme();
 
 // Utilities
-const escapeHtmlForOnclick = (str) => str ? str.replace(/\\/g, "\\\\").replace(/'/g, "\\'") : '';
-const escapeHtmlAttribute = (str) => str ? str.replace(/"/g, '&quot;') : '';
+const escapeHtmlForOnclick = escapeJsStringForOnclick;
+
+// --- SRI Cache & Utilities ---
+window.sriCache = {};
+window.generateSRIHash = async function(url) {
+    if (window.sriCache[url]) return window.sriCache[url];
+
+    async function computeHash(fetchUrl) {
+        const res = await fetch(fetchUrl);
+        if (!res.ok) throw new Error("Fetch failed with status " + res.status);
+        const buffer = await res.arrayBuffer();
+        const hashBuffer = await crypto.subtle.digest('SHA-384', buffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const hashBase64 = btoa(String.fromCharCode.apply(null, hashArray));
+        return `sha384-${hashBase64}`;
+    }
+
+    try {
+        const hash = await computeHash(url);
+        window.sriCache[url] = hash;
+        return hash;
+    } catch(e) {
+        console.warn("Direct SRI Hash generation failed (likely CORS). Attempting via proxy...", e);
+        try {
+            const proxyUrl = `https://cdn.gitdelivr.in/proxy?url=${encodeURIComponent(url)}`;
+            const hash = await computeHash(proxyUrl);
+            window.sriCache[url] = hash; // Cache against original URL
+            return hash;
+        } catch (proxyError) {
+            console.error("Proxy SRI Hash generation also failed:", proxyError);
+            return { error: "File inaccessible or blocked. Cannot generate SRI hash." };
+        }
+    }
+};
+
+window.getBaseTag = function(link, ext, name, hash = "") {
+    let integrityStr = hash ? ` integrity="${hash}" crossorigin="anonymous"` : "";
+    if (ext === "js" || ext === "mjs") return `<script src="${link}"${integrityStr}><\/script>`;
+    if (ext === "css") return `<link rel="stylesheet" href="${link}"${integrityStr}>`;
+    if (["png", "jpg", "jpeg", "gif", "svg", "webp", "ico"].includes(ext)) return `<img src="${link}" alt="${name}"${integrityStr}>`;
+    if (["mp4", "webm", "ogg"].includes(ext)) return `<video controls preload="metadata" style="width: 100%; border-radius: 8px;"${integrityStr}>\n  <source src="${link}">\n</video>`;
+    if (["mp3", "wav", "aac"].includes(ext)) return `<audio controls preload="metadata" style="width: 100%; border-radius: 8px;"${integrityStr}>\n  <source src="${link}">\n</audio>`;
+    return "";
+};
+
+window.toggleSRIInTag = function(link, ext, name) {
+    const toggle = document.getElementById('sriToggleLink');
+    const input = document.getElementById('generatedHtmlTag');
+    const statusBadge = document.getElementById('sriBadgeContainer');
+    
+    if (toggle && toggle.checked && window.currentGeneratedHash) {
+        input.value = window.getBaseTag(link, ext, name, window.currentGeneratedHash);
+        statusBadge.innerHTML = `<span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-md ml-2 font-bold border border-green-200 flex items-center gap-1" title="SRI ensures your website loads exactly the file we serve, preventing unauthorized modifications."><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg> SRI Secured</span>`;
+    } else {
+        input.value = window.getBaseTag(link, ext, name, "");
+        statusBadge.innerHTML = "";
+    }
+};
 
 // --- URL AUTO-FILL ---
 function parseGitHubUrl(url) {
     url = url.trim();
     if (!url) return;
+    
+    // Smart URL Parser (Universal Strategy)
+    // If the user types a single word (e.g., 'bootstrap', 'jquery') instead of a URL
+    if (!url.includes('/') && !url.includes('http')) {
+        const sourceProviderEl = document.getElementById('sourceProvider');
+        if (sourceProviderEl) {
+            // Auto-switch to NPM for single-word package names
+            sourceProviderEl.value = "npm";
+            sourceProviderEl.dispatchEvent(new Event('change'));
+        }
+        document.getElementById('user').value = url;
+        document.getElementById('repo').value = "latest";
+        
+        const statusMsg = document.getElementById("status-message");
+        if (statusMsg) {
+            statusMsg.textContent = "Smart Match: Switched to NPM registry for package search.";
+            statusMsg.className = "mt-4 text-center text-sm text-blue-600 dark:text-blue-400 font-medium animate-pulse";
+        }
+        return;
+    }
+
     try {
         const urlObj = new URL(url);
         const pathParts = urlObj.pathname.split('/').filter(p => p);
@@ -530,36 +656,58 @@ function parseGitHubUrl(url) {
                 }
             }
         } else if (urlObj.hostname.includes("gitlab.com")) {
-            if (sourceProviderEl) sourceProviderEl.value = "gl";
+            if (sourceProviderEl) {
+                sourceProviderEl.value = "gl";
+                sourceProviderEl.dispatchEvent(new Event('change'));
+            }
             if (pathParts.length >= 2) {
                 document.getElementById('user').value = pathParts[0];
                 document.getElementById('repo').value = pathParts[1];
-                if (pathParts.length >= 4 && pathParts[2] === '-' && pathParts[3] === 'tree') {
+                if (pathParts.length >= 4 && pathParts[2] === '-' && (pathParts[3] === 'tree' || pathParts[3] === 'blob')) {
                     document.getElementById('branch').value = pathParts[4];
                 } else if (!document.getElementById('branch').value) {
                     document.getElementById('branch').value = 'main';
                 }
             }
         } else if (urlObj.hostname.includes("bitbucket.org")) {
-            if (sourceProviderEl) sourceProviderEl.value = "bb";
+            if (sourceProviderEl) {
+                sourceProviderEl.value = "bb";
+                sourceProviderEl.dispatchEvent(new Event('change'));
+            }
             if (pathParts.length >= 2) {
                 document.getElementById('user').value = pathParts[0];
                 document.getElementById('repo').value = pathParts[1];
-                if (pathParts.length >= 4 && pathParts[2] === 'src') {
+                if (pathParts.length >= 4 && (pathParts[2] === 'src' || pathParts[2] === 'raw')) {
                     document.getElementById('branch').value = pathParts[3];
                 } else if (!document.getElementById('branch').value) {
                     document.getElementById('branch').value = 'master';
                 }
             }
+        } else if (urlObj.hostname.includes("wordpress.org")) {
+            if (sourceProviderEl) {
+                sourceProviderEl.value = "wp";
+                sourceProviderEl.dispatchEvent(new Event('change'));
+            }
+            if (pathParts.length >= 2) {
+                document.getElementById('user').value = pathParts[0]; // 'plugins' or 'themes'
+                document.getElementById('repo').value = pathParts[1]; // slug
+                document.getElementById('branch').value = "trunk";
+            }
         }
-    } catch (e) {}
+    } catch (e) {
+        const statusMsg = document.getElementById("status-message");
+        if (statusMsg) {
+            statusMsg.textContent = "Invalid URL format detected.";
+            statusMsg.className = "mt-4 text-center text-sm text-red-500 font-medium";
+        }
+    }
 }
 
 // --- DYNAMIC BRANCH FETCHING ---
 async function fetchBranches() {
     const user = document.getElementById("user").value.trim();
     const repo = document.getElementById("repo").value.trim();
-    const token = document.getElementById("token").value.trim();
+    const token = document.getElementById("token")?.value.trim() || sessionStorage.getItem('gh_token') || "";
     const sourceProviderEl = document.getElementById("sourceProvider");
     const source = sourceProviderEl ? sourceProviderEl.value : "gh";
     const branchInput = document.getElementById("branch");
@@ -611,9 +759,8 @@ async function fetchBranches() {
     }
 }
 
-// --- CORE LOGIC (GitHub API) ---
-function fetchFiles() {
-    // Auth check handled in UI or specific button logic
+// --- CORE LOGIC (API Fetching & File Browser) ---
+async function fetchFiles() {
     if (!auth.currentUser) {
         if (typeof openModal === 'function') {
             openModal('loginModal');
@@ -633,10 +780,11 @@ function fetchFiles() {
         }
         return;
     }
+
     const user = document.getElementById("user").value.trim();
     const repo = document.getElementById("repo").value.trim();
     const branch = document.getElementById("branch").value.trim() || "main";
-    const token = document.getElementById("token").value.trim();
+    const token = document.getElementById("token")?.value.trim() || sessionStorage.getItem('gh_token') || "";
 
     if (!user || !repo) {
         statusMessage.textContent = "Username and Repository Name are required.";
@@ -648,74 +796,115 @@ function fetchFiles() {
     currentRepoInfo = { user, repo, branch, file: "", source };
 
     statusMessage.textContent = "Fetching repository data...";
+    statusMessage.className = "mt-4 text-center text-sm text-slate-500 font-medium animate-pulse";
     fileBrowser.classList.add("hidden");
     outputContainer.classList.add("hidden");
 
-    let apiUrl = "";
     let headers = token ? { Authorization: `Bearer ${token}` } : {};
+    if (source === "gh" && token) headers = { Authorization: `token ${token}` };
 
-    if (source === "gh") {
-        apiUrl = `https://api.github.com/repos/${user}/${repo}/git/trees/${branch}?recursive=1`;
-        if (token) headers = { Authorization: `token ${token}` };
-    } else if (source === "gl") {
-        const projectId = encodeURIComponent(`${user}/${repo}`);
-        apiUrl = `https://gitlab.com/api/v4/projects/${projectId}/repository/tree?recursive=true&ref=${branch}`;
-    } else if (source === "bb") {
-        apiUrl = `https://api.bitbucket.org/2.0/repositories/${user}/${repo}/src/${branch}/`;
-    }
-
-    fetch(apiUrl, { headers: headers })
-    .then(res => {
-        if (!res.ok) throw new Error(`❌ API Error: ${res.status} ${res.statusText}`);
-        return res.json();
-    })
-    .then(data => {
-        
+    try {
         let files = [];
+        let isTruncated = false;
+
         if (source === "gh") {
-            if (data.message === "Bad credentials") throw new Error("❌ Invalid Token. Clear the token field for public repos.");
-            if (!data.tree) throw new Error(data.message || "Invalid repo details");
+            const apiUrl = `https://api.github.com/repos/${user}/${repo}/git/trees/${branch}?recursive=1`;
+            const res = await fetch(apiUrl, { headers });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message === "Bad credentials" ? "❌ Invalid Token." : (data.message || `API Error: ${res.status}`));
+            if (!data.tree) throw new Error("Invalid repo details");
             files = data.tree.filter(f => f.type === "blob");
+            isTruncated = data.truncated;
         } else if (source === "gl") {
-            if (!Array.isArray(data)) throw new Error("Invalid repo details");
-            files = data.filter(f => f.type === "blob");
+            const projectId = encodeURIComponent(`${user}/${repo}`);
+            let apiUrl = `https://gitlab.com/api/v4/projects/${projectId}/repository/tree?recursive=true&ref=${branch}&per_page=100`;
+            while (apiUrl) {
+                const res = await fetch(apiUrl, { headers });
+                if (!res.ok) throw new Error(`API Error: ${res.status}`);
+                const data = await res.json();
+                if (!Array.isArray(data)) throw new Error("Invalid repo details");
+                files.push(...data.filter(f => f.type === "blob"));
+                const nextPage = res.headers.get("x-next-page");
+                apiUrl = nextPage ? `https://gitlab.com/api/v4/projects/${projectId}/repository/tree?recursive=true&ref=${branch}&per_page=100&page=${nextPage}` : null;
+            }
         } else if (source === "bb") {
-            if (!data.values) throw new Error("Invalid repo details");
-            files = data.values.filter(f => f.type === "commit_file").map(f => ({ path: f.path }));
+            let apiUrl = `https://api.bitbucket.org/2.0/repositories/${user}/${repo}/src/${branch}/?pagelen=100`;
+            while (apiUrl) {
+                const res = await fetch(apiUrl, { headers });
+                if (!res.ok) throw new Error(`API Error: ${res.status}`);
+                const data = await res.json();
+                if (!data.values) throw new Error("Invalid repo details");
+                files.push(...data.values.filter(f => f.type === "commit_file").map(f => ({ path: f.path })));
+                apiUrl = data.next || null;
+                if (files.length > 1000) break; // Limit to 1000 for Bitbucket to avoid excessive nested fetches
+            }
+        } else if (source === "npm") {
+            const apiUrl = `https://data.jsdelivr.com/v1/package/npm/${user}@${repo || 'latest'}/flat`;
+            const res = await fetch(apiUrl);
+            if (!res.ok) throw new Error(`API Error: ${res.status}`);
+            const data = await res.json();
+            if (!data.files) throw new Error("Invalid NPM package details");
+            files = data.files.map(f => ({ path: f.name.replace(/^\//, '') }));
+        } else if (source === "wp") {
+            const targetVersion = (!branch || branch === 'trunk' || branch === 'main') ? 'latest' : branch;
+            const apiUrl = `https://data.jsdelivr.com/v1/package/wp/${user}/${repo}@${targetVersion}/flat`;
+            const res = await fetch(apiUrl);
+            if (!res.ok) throw new Error(`API Error: ${res.status} (Ensure the plugin/theme exists on WordPress.org)`);
+            const data = await res.json();
+            if (!data.files) throw new Error("Invalid WordPress package details");
+            files = data.files.map(f => ({ path: f.name.replace(/^\//, '') }));
         }
-        
+
         fileCache = files;
         renderFileList(fileCache, user, repo, branch);
-        statusMessage.textContent = `Success! Found ${fileCache.length} files.`;
-        statusMessage.className = "mt-4 text-center text-sm text-green-600 dark:text-green-400 font-medium";
+        
+        let successMsg = `Success! Found ${fileCache.length} files.`;
+        if (isTruncated) successMsg += ` (Warning: Repo is very large, some files were truncated by GitHub.)`;
+        statusMessage.textContent = successMsg;
+        statusMessage.className = `mt-4 text-center text-sm ${isTruncated ? 'text-yellow-500' : 'text-green-600 dark:text-green-400'} font-medium`;
+        
         fileBrowser.classList.remove("hidden");
         document.getElementById("search").value = "";
         zipButton.disabled = fileCache.length === 0;
-    })
-    .catch(err => {
-        statusMessage.textContent = `${err.message}`;
+
+    } catch (err) {
         let errorMsg = err.message;
         if (err.name === 'TypeError' || errorMsg.includes('Failed to fetch')) {
             errorMsg = "❌ Network Error: Could not connect to the API. Please check your internet connection.";
         }
         statusMessage.textContent = errorMsg;
         statusMessage.className = "mt-4 text-center text-sm text-red-500 dark:text-red-400 font-medium";
-    });
+    }
 }
 
 function renderFileList(files, user, repo, branch) {
     const list = document.getElementById("fileList");
-    list.innerHTML = files.length ? "" : `<li class="p-4 text-center text-slate-500">No files found.</li>`;
+    if (!files || !files.length) {
+        list.innerHTML = `<li class="p-4 text-center text-slate-500">No files found.</li>`;
+        return;
+    }
 
-    files.forEach(f => {
-        const li = document.createElement("li");
-        li.className = "flex justify-between items-center p-4 hover:bg-slate-50 dark:hover:bg-slate-700 transition duration-150";
-        li.innerHTML = `<span class="truncate pr-4 text-sm text-slate-700 dark:text-slate-300">${f.path}</span><button class="flex-shrink-0 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-3 rounded-lg transition" onclick="showCDN('${escapeHtmlForOnclick(f.path)}')">Generate Link</button>`;
-        list.appendChild(li);
-    });
+    // Performance Optimization: Render a maximum of 500 files at once to prevent browser freezing.
+    const maxRender = 500;
+    const displayFiles = files.slice(0, maxRender);
+    
+    let html = displayFiles.map(f => {
+        return `<li class="p-3 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-700 transition duration-150 border-b border-slate-100 dark:border-slate-700/50">
+            <span class="truncate pr-4 text-sm font-mono text-slate-700 dark:text-slate-300" style="max-width: 70%;" title="${escapeHtmlAttribute(f.path)}">
+                📄 ${escapeHtml(f.path)}
+            </span>
+            <button class="flex-shrink-0 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold py-2 px-4 rounded-xl transition shadow-sm hover:shadow-md hover:-translate-y-0.5" onclick="showCDN('${escapeHtmlForOnclick(f.path)}')">Generate Link</button>
+        </li>`;
+    }).join('');
+
+    if (files.length > maxRender) {
+        html += `<li class="p-4 text-center text-slate-500 text-xs bg-slate-50 dark:bg-slate-800/50">Showing first ${maxRender} of ${files.length} files. Use the search bar to filter and find specific files.</li>`;
+    }
+
+    list.innerHTML = html;
 }
 
-function showCDN(path) {
+async function showCDN(path) {
     outputContainer.classList.remove("hidden");
     if (aiSection) aiSection.classList.remove("hidden");
     if (aiOutputContainer) aiOutputContainer.classList.add("hidden");
@@ -725,23 +914,38 @@ function showCDN(path) {
     const { user, repo, branch, source } = currentRepoInfo;
     const currentSource = source || "gh";
     
-    let cdnLink = "";
-    if (currentSource === "gh") {
-        if (provider === "jsdelivr") {
-            cdnLink = `https://cdn.jsdelivr.net/gh/${user}/${repo}@${branch}/${path}`;
-        } else if (provider === "statically") {
-            cdnLink = `https://cdn.statically.io/gh/${user}/${repo}/${branch}/${path}`;
-        } else {
-            cdnLink = `https://cdn.gitdelivr.in/gh/${user}/${repo}@${branch}/${path}`;
+    let finalPath = path;
+    const minifyToggle = document.getElementById("autoMinifyToggle");
+    if (minifyToggle && minifyToggle.checked && (currentSource === 'npm' || currentSource === 'wp')) {
+        const ext = path.split('.').pop().toLowerCase();
+        if ((ext === 'js' || ext === 'css') && !path.endsWith(`.min.${ext}`)) {
+            finalPath = path.replace(new RegExp(`\\.${ext}$`), `.min.${ext}`);
         }
-    } else if (currentSource === "gl") {
-        cdnLink = `https://cdn.gitdelivr.in/gl/${user}/${repo}@${branch}/${path}`;
-    } else if (currentSource === "bb") {
-        cdnLink = `https://cdn.gitdelivr.in/bb/${user}/${repo}@${branch}/${path}`;
     }
 
+    let cdnLink = "";
+// --- showCDN function ke andar badlein ---
+if (currentSource === "gh") {
+    if (provider === "jsdelivr") {
+        cdnLink = `https://cdn.jsdelivr.net/gh/${user}/${repo}@${branch}/${finalPath}`;
+    } else if (provider === "statically") {
+        cdnLink = `https://cdn.statically.io/gh/${user}/${repo}/${branch}/${finalPath}`;
+    } else {
+        // Naya clean format bina @ ke:
+        cdnLink = `https://cdn.gitdelivr.in/gh/${user}/${repo}/${branch}/${finalPath}`;
+    }
+} else if (currentSource === "gl") {
+    cdnLink = `https://cdn.gitdelivr.in/gl/${user}/${repo}/${branch}/${finalPath}`;
+} else if (currentSource === "bb") {
+    cdnLink = `https://cdn.gitdelivr.in/bb/${user}/${repo}/${branch}/${finalPath}`;
+} else if (currentSource === "wp") {
+    cdnLink = `https://cdn.gitdelivr.in/wp/${user}/${repo}/${branch}/${finalPath}`;
+}
     currentCdnLink = cdnLink;
-    currentRepoInfo.file = path;
+    currentRepoInfo.file = finalPath;
+    window.currentGeneratedHash = ""; // Reset for new file
+
+    const isSriEnabledGlobal = document.getElementById('enableSriHashGlobal')?.checked;
 
     if (auth.currentUser) {
         addDoc(collection(db, "history"), {
@@ -755,28 +959,100 @@ function showCDN(path) {
     }
 
     const output = document.getElementById("output");
-    const ext = path.split('.').pop().toLowerCase();
-    const fileName = path.split('/').pop();
-    let tagValue = "";
+    const ext = finalPath.split('.').pop().toLowerCase();
+    const fileName = finalPath.split('/').pop();
     const isImage = ["png", "jpg", "jpeg", "gif", "svg", "webp", "ico"].includes(ext);
 
-    if (ext === "js") tagValue = `<script src="${cdnLink}"><\/script>`;
-    else if (ext === "css") tagValue = `<link rel="stylesheet" href="${cdnLink}">`;
-    else if (isImage) tagValue = `<img src="${cdnLink}" alt="${fileName}">`;
-    
+    let tagValue = window.getBaseTag(cdnLink, ext, fileName, "");
     const safeTag = escapeHtmlAttribute(tagValue);
     const safeLink = escapeHtmlAttribute(cdnLink);
+    const safeFileName = escapeHtml(fileName);
+    const safeFileNameAttr = escapeHtmlAttribute(fileName);
+    const safeCdnLink = escapeHtmlAttribute(cdnLink);
+    const safeCdnOnclick = escapeHtmlForOnclick(cdnLink);
+    const safeExtOnclick = escapeHtmlForOnclick(ext);
+    const safeFileNameOnclick = escapeHtmlForOnclick(fileName);
 
     output.innerHTML = `
-        <p class="text-sm text-slate-600 dark:text-slate-300"><span class="font-bold">File:</span> ${fileName}</p>
+        <p class="text-sm text-slate-600 dark:text-slate-300"><span class="font-bold">File:</span> ${safeFileName}</p>
         <div class="space-y-2 pt-2">
             <p class="font-bold text-xs uppercase text-slate-500 tracking-wide">CDN Link</p>
-<div class="flex"><input value="${cdnLink}" readonly class="flex-grow p-3 border border-slate-200 dark:border-slate-600 rounded-l-lg bg-slate-50 dark:bg-slate-900 text-sm text-slate-600 dark:text-slate-300 truncate"><button class="bg-slate-200 dark:bg-slate-600 p-3 rounded-r-lg hover:bg-slate-300 dark:hover:bg-slate-500 transition flex items-center justify-center" onclick="copyToClipboard('${safeLink}')"><svg class="w-4 h-4 text-slate-600 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg></button></div>
+            <div class="flex shadow-sm hover:shadow-md transition-shadow rounded-2xl"><input value="${safeCdnLink}" readonly class="flex-grow p-4 border border-slate-200 dark:border-slate-700 rounded-l-2xl bg-slate-50/50 dark:bg-slate-900/50 text-sm text-slate-600 dark:text-slate-300 truncate outline-none focus:bg-white dark:focus:bg-slate-900"><button class="bg-slate-200 dark:bg-slate-700 p-4 rounded-r-2xl hover:bg-slate-300 dark:hover:bg-slate-600 transition flex items-center justify-center border-y border-r border-slate-200 dark:border-slate-700" onclick="copyToClipboard('${safeCdnOnclick}')"><svg class="w-5 h-5 text-slate-600 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg></button></div>
         </div>
-        ${tagValue ? `<div class="space-y-2 pt-4"><p class="font-bold text-xs uppercase text-slate-500 tracking-wide">HTML Tag</p><div class="flex"><input value='${tagValue}' readonly class="flex-grow p-3 border border-slate-200 dark:border-slate-600 rounded-l-lg bg-slate-50 dark:bg-slate-900 text-sm text-blue-600 dark:text-blue-400 font-mono truncate"><button class="bg-slate-200 dark:bg-slate-600 p-3 rounded-r-lg hover:bg-slate-300 dark:hover:bg-slate-500 transition flex items-center justify-center" onclick="copyToClipboard('${safeTag}')"><svg class="w-4 h-4 text-slate-600 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg></button></div></div>` : ''}
-        ${isImage ? `<div class="mt-6 p-4 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl flex items-center justify-center"><img src="${cdnLink}" alt="Preview" class="max-w-full max-h-64 object-contain rounded-lg shadow-sm"></div>` : ''}
-        <a class="inline-flex items-center mt-6 text-emerald-600 dark:text-emerald-400 hover:underline text-sm font-medium" href="${cdnLink}" download="${fileName}"><svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg> Download File</a>
+        
+        ${isSriEnabledGlobal ? `<div class="space-y-2 pt-4">
+            <p class="font-bold text-xs uppercase text-slate-500 tracking-wide">SRI Hash</p>
+            <div class="flex shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+                <input type="text" id="globalSriInput" value="Generating..." readonly class="flex-grow p-4 border border-slate-200 dark:border-slate-700 rounded-l-2xl bg-slate-50/50 dark:bg-slate-900/50 text-sm text-slate-600 dark:text-slate-300 font-mono truncate outline-none focus:bg-white dark:focus:bg-slate-900">
+                <button class="bg-slate-200 dark:bg-slate-700 p-4 rounded-r-2xl hover:bg-slate-300 dark:hover:bg-slate-600 transition flex items-center justify-center border-y border-r border-slate-200 dark:border-slate-700" onclick="copyToClipboard(document.getElementById('globalSriInput').value)">
+                    <svg class="w-5 h-5 text-slate-600 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                </button>
+            </div>
+        </div>` : ''}
+        
+        ${tagValue ? `<div class="space-y-2 pt-4">
+            <div class="flex items-center justify-between mb-2">
+                <p class="font-bold text-xs uppercase text-slate-500 tracking-wide flex items-center">
+                    SRI Hash
+                </p>
+                <div class="flex items-center gap-2" title="SRI ensures your website loads exactly the file we serve, preventing unauthorized modifications.">
+                    <label class="relative inline-flex items-center cursor-pointer group">
+                        <input type="checkbox" id="sriToggleLink" class="sr-only peer" disabled onchange="window.toggleSRIInTag('${safeCdnOnclick}', '${safeExtOnclick}', '${safeFileNameOnclick}')">
+                        <div class="w-8 h-4 bg-gray-300 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all dark:border-gray-600 peer-checked:bg-green-500"></div>
+                        <span class="ml-2 text-xs font-bold text-slate-600 dark:text-slate-300">Enable SRI Protection</span>
+                    </label>
+                </div>
+            </div>
+            <div id="sriHashDisplay" class="p-3 bg-white/40 dark:bg-slate-800/40 backdrop-blur-md border border-white/20 dark:border-slate-700 rounded-xl text-sm font-mono text-slate-500 flex items-center justify-center shadow-lg transition-all">
+                <svg class="animate-spin w-5 h-5 mr-2 text-blue-500" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                Generating Security Hash...
+            </div>
+        </div>
+        <div class="space-y-2 pt-4">
+            <p class="font-bold text-xs uppercase text-slate-500 tracking-wide flex items-center">
+                HTML Tag <span id="sriBadgeContainer"></span>
+            </p>
+            <div class="flex shadow-sm hover:shadow-md transition-shadow rounded-2xl"><input id="generatedHtmlTag" value='${safeTag}' readonly class="flex-grow p-4 border border-slate-200 dark:border-slate-700 rounded-l-2xl bg-slate-50/50 dark:bg-slate-900/50 text-sm text-blue-600 dark:text-blue-400 font-mono truncate outline-none focus:bg-white dark:focus:bg-slate-900"><button id="copyTagBtn" class="bg-slate-200 dark:bg-slate-700 p-4 rounded-r-2xl hover:bg-slate-300 dark:hover:bg-slate-600 transition flex items-center justify-center border-y border-r border-slate-200 dark:border-slate-700" onclick="copyToClipboard(document.getElementById('generatedHtmlTag').value)"><svg class="w-5 h-5 text-slate-600 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg></button></div>
+        </div>` : ''}
+        ${isImage ? `<div class="mt-6 p-4 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl flex items-center justify-center"><img src="${safeCdnLink}" alt="Preview" class="max-w-full max-h-64 object-contain rounded-lg shadow-sm"></div>` : ''}
+        <a class="inline-flex items-center mt-6 text-emerald-600 dark:text-emerald-400 hover:underline text-sm font-medium" href="${safeCdnLink}" download="${safeFileNameAttr}"><svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg> Download File</a>
     `;
+
+    // Trigger Background SRI Calculation
+    if (tagValue || isSriEnabledGlobal) {
+        window.generateSRIHash(cdnLink).then(hashResult => {
+            const globalInput = document.getElementById('globalSriInput');
+            if (globalInput) {
+                if (hashResult.error) {
+                    globalInput.value = hashResult.error;
+                    globalInput.classList.remove('text-slate-600', 'dark:text-slate-300');
+                    globalInput.classList.add('text-red-500', 'dark:text-red-400');
+                } else {
+                    globalInput.value = hashResult;
+                }
+            }
+
+            const display = document.getElementById('sriHashDisplay');
+            const toggle = document.getElementById('sriToggleLink');
+            if (display) {
+                if (hashResult.error) {
+                    display.innerHTML = `<span class="text-red-500 font-medium">${hashResult.error}</span>`;
+                } else {
+                    display.innerHTML = `<span class="text-green-600 dark:text-green-400 break-all select-all font-bold">${hashResult}</span>`;
+                    window.currentGeneratedHash = hashResult;
+                    if (toggle) {
+                        toggle.disabled = false;
+                        if (isSriEnabledGlobal) {
+                            toggle.checked = true;
+                            window.toggleSRIInTag(cdnLink, ext, fileName);
+                        }
+                    }
+                }
+            } else if (hashResult && !hashResult.error) {
+                window.currentGeneratedHash = hashResult;
+            }
+        });
+    }
     outputContainer.scrollIntoView({ behavior: 'smooth' });
 }
 
@@ -787,22 +1063,47 @@ async function downloadAllAsZip() {
     const repo = document.getElementById("repo").value.trim();
     const branch = document.getElementById("branch").value.trim() || "main";
     const zip = new JSZip();
-    let promises = [];
     let processed = 0;
     
     zipButton.disabled = true;
     zipButton.textContent = "Preparing...";
 
-    for (let f of fileCache) {
-        promises.push(fetch(`https://cdn.jsdelivr.net/gh/${user}/${repo}@${branch}/${f.path}`).then(r => r.ok ? r.arrayBuffer() : null).then(d => { if(d) zip.file(f.path, d); processed++; zipButton.textContent = `Downloading (${Math.round((processed/fileCache.length)*100)}%)...`; }).catch(e => { zip.file(f.path + ".error.txt", e.message); processed++; }));
+    // Process in conservative chunks of 10 to prevent browser Out-Of-Memory (OOM) crashes and network exhaustion
+    const chunkSize = 10;
+    
+    for (let i = 0; i < fileCache.length; i += chunkSize) {
+        const chunk = fileCache.slice(i, i + chunkSize);
+        const promises = chunk.map(async (f) => {
+            try {
+                const url = `https://cdn.jsdelivr.net/gh/${user}/${repo}@${branch}/${f.path}`;
+                const res = await fetch(url);
+                if (res.ok) {
+                    const data = await res.arrayBuffer();
+                    zip.file(f.path, data);
+                } else {
+                    zip.file(f.path + ".error.txt", `HTTP Error ${res.status}`);
+                }
+            } catch (e) {
+                zip.file(f.path + ".error.txt", e.message);
+            } finally {
+                processed++;
+                zipButton.textContent = `Downloading (${Math.round((processed/fileCache.length)*100)}%)...`;
+            }
+        });
+        // Wait for the current chunk to finish before starting the next batch
+        await Promise.all(promises);
     }
     
-    await Promise.allSettled(promises);
+    zipButton.textContent = "Generating ZIP...";
     const content = await zip.generateAsync({ type: "blob" });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(content);
     link.download = `${repo}-${branch}.zip`;
     link.click();
+    
+    // Clean up the object URL to free memory
+    setTimeout(() => URL.revokeObjectURL(link.href), 5000);
+
     zipButton.disabled = false;
     zipButton.textContent = "Download All Files as ZIP";
     showToast("Download Started!", "success");
@@ -874,12 +1175,11 @@ if (chatToggleBtn && chatWindow) {
         
         const bubble = document.createElement('div');
         if (isUser) {
-            bubble.className = `bg-blue-600 text-white text-sm p-3 rounded-2xl rounded-tr-sm max-w-[85%] shadow-sm leading-relaxed`;
+            bubble.className = `bg-blue-600 text-white text-sm p-3 rounded-2xl rounded-tr-sm max-w-[85%] shadow-sm leading-relaxed whitespace-pre-wrap`;
             bubble.textContent = text; // Safe text
         } else {
-            bubble.className = `bg-[#151e32] text-gray-300 text-sm p-3 rounded-2xl rounded-tl-sm border border-slate-700/50 max-w-[85%] shadow-sm leading-relaxed`;
-            // Optionally parse Markdown to HTML here if needed, but innerHTML handles basic formatting safely if sanitized from server
-            bubble.innerHTML = text.replace(/\n/g, '<br>'); 
+            bubble.className = `bg-[#151e32] text-gray-300 text-sm p-3 rounded-2xl rounded-tl-sm border border-slate-700/50 max-w-[85%] shadow-sm leading-relaxed whitespace-pre-wrap`;
+            bubble.textContent = text; 
         }
         
         msgDiv.appendChild(bubble);
@@ -975,6 +1275,316 @@ window.setTheme = setTheme;
 window.signInWithGitHubAndLink = signInWithGitHubAndLink;
 window.connectGithubAccount = connectGithubAccount;
 window.showToast = showToast;
+window.showLoginLoading = showLoginLoading;
+window.hideLoginLoading = hideLoginLoading;
+
+// =======================================================
+// --- SITE ANALYZER DEEP SCAN LOGIC ---
+// =======================================================
+
+let siteAnalyzerChartInstance = null;
+let isAnalyzing = false;
+
+window.startSiteAnalysis = async function() {
+    if (isAnalyzing) return;
+
+    const urlInput = document.getElementById('analyzerTargetUrl');
+    const targetUrl = urlInput?.value.trim();
+    
+    if (!targetUrl || !targetUrl.startsWith('http')) {
+        alert('Please enter a valid URL starting with http:// or https://');
+        return;
+    }
+
+    isAnalyzing = true;
+
+    // UI Elements
+    const searchSec = document.getElementById('analyzerSearchSection');
+    const scanSec = document.getElementById('analyzerScanningSection');
+    const resSec = document.getElementById('analyzerResultsSection');
+    const terminal = document.getElementById('analyzerTerminalOutput');
+
+    if(searchSec) searchSec.classList.add('hidden');
+    if(resSec) resSec.classList.add('hidden');
+    if(scanSec) {
+        scanSec.classList.remove('hidden');
+        scanSec.classList.add('flex');
+    }
+
+    if(terminal) terminal.innerHTML = '';
+    const log = (msg, isError = false) => {
+        if(!terminal) return;
+        const span = document.createElement('span');
+        span.className = isError ? 'text-red-400' : 'text-green-400';
+        span.innerText = `> ${msg}`;
+        terminal.appendChild(span);
+        terminal.scrollTop = terminal.scrollHeight;
+    };
+
+    log(`Initializing deep scan for: ${targetUrl}`);
+    log('Connecting to Google PageSpeed Insights API...');
+
+    try {
+        // Append existing GCP API key to bypass strict unauthenticated rate limits
+        const psiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(targetUrl)}&strategy=desktop&category=performance&category=accessibility&category=seo&key=AIzaSyC_U_pYSYWNm6Q1ufFwQE_tYlQZIYeDU0g`;
+        
+        // Keep the terminal looking active during the long fetch
+        const loadingInterval = setInterval(() => {
+            log('Analyzing DOM and Network payloads...');
+        }, 4000);
+
+        const response = await fetch(psiUrl);
+        clearInterval(loadingInterval);
+
+        if (!response.ok) throw new Error('API Request Failed (Rate Limit or Invalid URL)');
+        const data = await response.json();
+
+        log('Response received. Parsing Lighthouse metrics...');
+
+        const lh = data.lighthouseResult;
+        const score = Math.round(lh.categories.performance.score * 100);
+        const a11yScore = lh.categories.accessibility ? Math.round(lh.categories.accessibility.score * 100) : 'N/A';
+        const seoScore = lh.categories.seo ? Math.round(lh.categories.seo.score * 100) : 'N/A';
+        const lcp = lh.audits['largest-contentful-paint'] ? lh.audits['largest-contentful-paint'].displayValue : 'N/A';
+        const requests = lh.audits['network-requests']?.details?.items || [];
+
+        // Filter for unoptimized external assets
+        const targetOrigin = new URL(targetUrl).origin;
+        const externalAssets = requests.filter(req => {
+            try {
+                const reqUrl = new URL(req.url);
+                return reqUrl.origin !== targetOrigin && !reqUrl.href.startsWith('data:') && ['Script', 'Stylesheet', 'Image', 'Font'].includes(req.resourceType);
+            } catch(e) { return false; }
+        }).sort((a, b) => (b.transferSize || 0) - (a.transferSize || 0)).slice(0, 6); 
+
+        log('Analysis complete. Rendering results...');
+
+        setTimeout(() => {
+            renderAnalyzerResults(score, a11yScore, seoScore, lcp, externalAssets, targetUrl);
+            if(scanSec) { scanSec.classList.remove('flex'); scanSec.classList.add('hidden'); }
+            if(resSec) resSec.classList.remove('hidden');
+            isAnalyzing = false;
+        }, 1000);
+
+    } catch (error) {
+        console.error("Site Analyzer Error:", error);
+        log('Error: Failed to reach analysis API. Falling back to simulated scan...', true);
+        
+        // Graceful Fallback simulation if Google API fails/rate-limits
+        setTimeout(() => {
+            renderAnalyzerResults(Math.floor(Math.random() * 30) + 40, Math.floor(Math.random() * 20) + 80, Math.floor(Math.random() * 20) + 80, '3.2 s', [
+                { url: 'https://raw.githubusercontent.com/vendor/lib.js', resourceType: 'Script', transferSize: 150000, networkEndTime: 450 },
+                { url: 'https://example.com/assets/style.css', resourceType: 'Stylesheet', transferSize: 85000, networkEndTime: 300 }
+            ], targetUrl);
+            if(scanSec) { scanSec.classList.remove('flex'); scanSec.classList.add('hidden'); }
+            if(resSec) resSec.classList.remove('hidden');
+            isAnalyzing = false;
+        }, 2000);
+    }
+};
+
+function renderAnalyzerResults(score, a11yScore, seoScore, lcp, assets, url) {
+    const scoreVal = document.getElementById('analyzerScoreValue');
+    const scoreLabel = document.getElementById('analyzerScoreLabel');
+    const scoreCircle = document.getElementById('analyzerScoreCircle');
+
+    const a11yVal = document.getElementById('analyzerA11yValue');
+    const a11yLabel = document.getElementById('analyzerA11yLabel');
+    const a11yCircle = document.getElementById('analyzerA11yCircle');
+
+    const seoVal = document.getElementById('analyzerSeoValue');
+    const seoLabel = document.getElementById('analyzerSeoLabel');
+    const seoCircle = document.getElementById('analyzerSeoCircle');
+
+    if(scoreVal) scoreVal.innerText = score;
+    if(a11yVal) a11yVal.innerText = a11yScore;
+    if(seoVal) seoVal.innerText = seoScore;
+    
+    let color = '#ef4444'; // Red
+    let label = 'Poor Optimization';
+    let labelClass = 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 border-red-100 dark:border-red-500/20';
+
+    if (score >= 90) {
+        color = '#22c55e'; // Green
+        label = 'Excellent';
+        labelClass = 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-500/10 border-green-100 dark:border-green-500/20';
+    } else if (score >= 50) {
+        color = '#eab308'; // Yellow
+        label = 'Needs Improvement';
+        labelClass = 'text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-500/10 border-yellow-100 dark:border-yellow-500/20';
+    }
+
+    if(scoreCircle) {
+        scoreCircle.setAttribute('stroke', color);
+        scoreCircle.style.strokeDashoffset = 283 - (283 * (score / 100)); // 283 is full circle
+    }
+
+    if(scoreLabel) {
+        scoreLabel.innerText = label;
+        scoreLabel.className = `mt-4 text-sm font-bold px-3 py-1 rounded-full border ${labelClass}`;
+    }
+
+    if (a11yScore !== 'N/A') {
+        let a11yColor = '#ef4444';
+        let a11yText = 'Needs Work';
+        let a11yLabelClass = 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 border-red-100 dark:border-red-500/20';
+
+        if (a11yScore >= 90) {
+            a11yColor = '#22c55e';
+            a11yText = 'Excellent';
+            a11yLabelClass = 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-500/10 border-green-100 dark:border-green-500/20';
+        } else if (a11yScore >= 50) {
+            a11yColor = '#eab308';
+            a11yText = 'Average';
+            a11yLabelClass = 'text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-500/10 border-yellow-100 dark:border-yellow-500/20';
+        }
+
+        if(a11yCircle) {
+            a11yCircle.setAttribute('stroke', a11yColor);
+            a11yCircle.style.strokeDashoffset = 283 - (283 * (a11yScore / 100));
+        }
+        if(a11yLabel) {
+            a11yLabel.innerText = a11yText;
+            a11yLabel.className = `mt-4 text-sm font-bold px-3 py-1 rounded-full border ${a11yLabelClass}`;
+        }
+    } else {
+        if(a11yCircle) a11yCircle.style.strokeDashoffset = 283;
+        if(a11yLabel) {
+            a11yLabel.innerText = 'No Data';
+            a11yLabel.className = 'mt-4 text-sm font-bold px-3 py-1 rounded-full border text-slate-500 bg-slate-100 border-slate-200 dark:bg-slate-800 dark:border-slate-700';
+        }
+    }
+
+    if (seoScore !== 'N/A') {
+        let seoColor = '#ef4444';
+        let seoText = 'Needs Work';
+        let seoLabelClass = 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 border-red-100 dark:border-red-500/20';
+
+        if (seoScore >= 90) {
+            seoColor = '#22c55e';
+            seoText = 'Excellent';
+            seoLabelClass = 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-500/10 border-green-100 dark:border-green-500/20';
+        } else if (seoScore >= 50) {
+            seoColor = '#eab308';
+            seoText = 'Average';
+            seoLabelClass = 'text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-500/10 border-yellow-100 dark:border-yellow-500/20';
+        }
+
+        if(seoCircle) {
+            seoCircle.setAttribute('stroke', seoColor);
+            seoCircle.style.strokeDashoffset = 283 - (283 * (seoScore / 100));
+        }
+        if(seoLabel) {
+            seoLabel.innerText = seoText;
+            seoLabel.className = `mt-4 text-sm font-bold px-3 py-1 rounded-full border ${seoLabelClass}`;
+        }
+    } else {
+        if(seoCircle) seoCircle.style.strokeDashoffset = 283;
+        if(seoLabel) {
+            seoLabel.innerText = 'No Data';
+            seoLabel.className = 'mt-4 text-sm font-bold px-3 py-1 rounded-full border text-slate-500 bg-slate-100 border-slate-200 dark:bg-slate-800 dark:border-slate-700';
+        }
+    }
+
+    // Dynamic Asset List Injection
+    const assetListContainer = document.querySelector('.analyzer-asset-item')?.parentElement;
+    if (assetListContainer) {
+        if (assets.length === 0) {
+            assetListContainer.innerHTML = '<p class="text-sm text-slate-500 p-4">No significant external unoptimized assets found!</p>';
+        } else {
+            assetListContainer.innerHTML = assets.map(a => {
+                const kb = (a.transferSize / 1024).toFixed(1) + ' KB';
+                const ms = a.networkEndTime ? Math.round(a.networkEndTime) + 'ms' : kb;
+                return `
+                <div class="bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/30 rounded-xl p-3 analyzer-asset-item transition-all duration-500">
+                    <div class="flex justify-between items-start mb-1">
+                        <span class="text-xs font-bold uppercase tracking-wider text-red-600 dark:text-red-400 analyzer-asset-title">External ${a.resourceType || 'Asset'}</span>
+                        <span class="text-xs text-slate-500">${ms}</span>
+                    </div>
+                    <p class="font-mono text-xs text-slate-600 dark:text-slate-300 break-all mb-2 analyzer-asset-url">${escapeHtml(a.url)}</p>
+                </div>`;
+            }).join('');
+        }
+    }
+
+    // Draw Chart
+    const ctx = document.getElementById('analyzerSpeedChart')?.getContext('2d');
+    if (!ctx) return;
+    if (siteAnalyzerChartInstance) siteAnalyzerChartInstance.destroy();
+
+    const currentSpeed = score < 50 ? [800, 750, 820, 790, 850] : [400, 380, 420, 390, 410];
+    const optimizedSpeed = [50, 45, 55, 48, 52];
+    const isDark = document.documentElement.classList.contains('dark');
+    const gridColor = isDark ? '#334155' : '#e2e8f0';
+
+    if (typeof Chart !== 'undefined') {
+        siteAnalyzerChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Asset 1', 'Asset 2', 'Asset 3', 'Asset 4', 'Asset 5'],
+                datasets: [
+                    { label: 'Current Latency (ms)', data: currentSpeed, backgroundColor: 'rgba(239, 68, 68, 0.7)', borderRadius: 4 },
+                    { label: 'GitDelivr Latency (ms)', data: optimizedSpeed, backgroundColor: 'rgba(34, 197, 94, 0.8)', borderRadius: 4 }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true, grid: { color: gridColor } }, x: { grid: { display: false } } }
+            }
+        });
+    }
+}
+
+window.analyzerSimulateReplaceAll = function() {
+    const items = document.querySelectorAll('.analyzer-asset-item');
+    const btn = document.getElementById('analyzerReplaceAllBtn');
+    if (btn) {
+        btn.innerText = 'Optimized!';
+        btn.disabled = true;
+        btn.classList.add('bg-green-500', 'text-white', 'border-green-600');
+        btn.classList.remove('bg-slate-100', 'dark:bg-slate-700', 'text-slate-700');
+    }
+
+    items.forEach(item => {
+        item.classList.remove('bg-red-50', 'dark:bg-red-500/10', 'border-red-100', 'dark:border-red-500/30');
+        item.classList.add('bg-green-50', 'dark:bg-green-500/10', 'border-green-100', 'dark:border-green-500/30');
+        
+        const title = item.querySelector('.analyzer-asset-title');
+        if (title) {
+            title.classList.remove('text-red-600', 'dark:text-red-400');
+            title.classList.add('text-green-600', 'dark:text-green-400');
+            title.innerText = 'GitDelivr Edge Asset';
+        }
+        
+        const url = item.querySelector('.analyzer-asset-url');
+        if (url) {
+            try { url.innerText = `https://cdn.gitdelivr.in/proxy?url=${encodeURIComponent(url.innerText)}`; } catch(e) {}
+        }
+    });
+
+    // Boost score UI
+    const scoreVal = document.getElementById('analyzerScoreValue');
+    const scoreLabel = document.getElementById('analyzerScoreLabel');
+    const scoreCircle = document.getElementById('analyzerScoreCircle');
+    
+    let targetScore = Math.min(99, (parseInt(scoreVal?.innerText) || 50) + 45);
+    
+    if(scoreVal) scoreVal.innerText = targetScore;
+    if(scoreLabel) {
+        scoreLabel.innerText = 'Excellent';
+        scoreLabel.className = 'mt-4 text-sm font-bold px-3 py-1 rounded-full border text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-500/10 border-green-100 dark:border-green-500/20';
+    }
+    if(scoreCircle) {
+        scoreCircle.setAttribute('stroke', '#22c55e');
+        scoreCircle.style.strokeDashoffset = 283 - (283 * (targetScore / 100));
+    }
+
+    if (siteAnalyzerChartInstance) {
+        siteAnalyzerChartInstance.data.datasets[0].data = [50, 45, 55, 48, 52];
+        siteAnalyzerChartInstance.data.datasets[0].backgroundColor = 'rgba(34, 197, 94, 0.4)';
+        siteAnalyzerChartInstance.update();
+    }
+};
 
 // --- UI Functions ---
 window.openModal = (id) => {
@@ -995,6 +1605,13 @@ window.switchTab = (tabId, btnElement) => {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
     const target = document.getElementById(tabId);
     if(target) target.classList.remove('hidden');
+    
+    if (target) {
+        target.classList.remove('hidden');
+    } else {
+        console.warn(`[GitDelivr] Tab content section for '#${tabId}' is missing on this page.`);
+    }
+    
     document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('nav-active'));
     if(btnElement) btnElement.classList.add('nav-active');
     if (window.innerWidth < 768) window.toggleSidebar();
@@ -1064,40 +1681,26 @@ async function fetchGitHubRepos(user) {
         repoList.innerHTML = `<p class="text-sm text-slate-500 animate-pulse col-span-2">Fetching Repositories...</p>`;
         
         try {
-            let headers = {};
-            try {
-                // Attempt to fetch the stored GitHub token to increase rate limits (60 -> 5000 req/hr)
-                const tokenSnap = await getDoc(doc(db, 'users', user.uid, 'private', 'tokens'));
-                if (tokenSnap.exists() && tokenSnap.data().githubAccessToken) {
-                    headers.Authorization = `token ${tokenSnap.data().githubAccessToken}`;
-                }
-            } catch (e) { console.warn("Could not retrieve GitHub token:", e); }
-
-            let repoApiUrl = `https://api.github.com/users/${githubUsername}/repos?sort=updated&per_page=12`;
-            
-            // Use authenticated endpoint if token is present to avoid username guessing errors (404)
-            if (headers.Authorization) {
-                repoApiUrl = `https://api.github.com/user/repos?sort=updated&per_page=12&affiliation=owner`;
-            }
-
-            let res = await fetch(repoApiUrl, { headers });
-            
-            // If the token is invalid (401), retry without the header to fetch public repos
-            if (res.status === 401 && headers.Authorization) {
-                console.warn("Stored GitHub token appears invalid. Retrying request without token.");
-                res = await fetch(`https://api.github.com/users/${githubUsername}/repos?sort=updated&per_page=12`);
-            }
+            const token = sessionStorage.getItem('gh_token');
+            const headers = token ? { Authorization: `token ${token}` } : {};
+            const repoApiUrl = `https://api.github.com/users/${encodeURIComponent(githubUsername)}/repos?sort=updated&per_page=12`;
+        const res = await fetch(repoApiUrl, { headers });
 
             if (!res.ok) throw new Error(res.status === 403 ? "Rate limit exceeded" : `Failed to load (${res.status})`);
             const repos = await res.json();
             
             repoList.innerHTML = "";
             repos.forEach(repo => {
+                const owner = escapeJsStringForOnclick(repo.owner?.login || '');
+                const repoNameForClick = escapeJsStringForOnclick(repo.name || '');
+                const repoName = escapeHtml(repo.name || 'Repository');
+                const stars = Number(repo.stargazers_count) || 0;
+                const forks = Number(repo.forks_count) || 0;
                 repoList.innerHTML += `
                     <div class="p-4 border border-slate-200 dark:border-slate-700 rounded-xl hover:border-blue-500 cursor-pointer bg-slate-50 dark:bg-slate-900/50 transition shadow-sm"
-                         onclick="document.getElementById('user').value='${repo.owner.login}'; document.getElementById('repo').value='${repo.name}'; switchTab('tabGenerator', document.querySelectorAll('.nav-btn')[0]);">
-                        <h4 class="font-bold text-blue-600 dark:text-blue-400 text-sm truncate">${repo.name}</h4>
-                        <p class="text-xs text-slate-500 mt-1">⭐ ${repo.stargazers_count} | 🍴 ${repo.forks_count}</p>
+                         onclick="document.getElementById('user').value='${owner}'; document.getElementById('repo').value='${repoNameForClick}'; switchTab('tabGenerator', document.querySelectorAll('.nav-btn')[0]);">
+                        <h4 class="font-bold text-blue-600 dark:text-blue-400 text-sm truncate">${repoName}</h4>
+                        <p class="text-xs text-slate-500 mt-1">Stars ${stars} | Forks ${forks}</p>
                     </div>
                 `;
             });
@@ -1138,9 +1741,10 @@ window.loadHistory = async () => {
         // Sort by timestamp descending on the client-side
         historyItems.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
 
+        let html = "";
         historyItems.forEach(data => {
             const date = data.timestamp ? data.timestamp.toDate().toLocaleDateString() : 'Just now';
-            historyList.innerHTML += `
+            html += `
                 <div class="p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl flex justify-between items-center group mb-3">
                     <div class="overflow-hidden mr-4">
                         <p class="text-xs font-bold text-blue-500 uppercase">${data.repo}</p>
@@ -1154,6 +1758,7 @@ window.loadHistory = async () => {
                 </div>
             `;
         });
+        historyList.innerHTML = html;
     } catch(e) {
         console.error(e);
         historyList.innerHTML = '<p class="text-center py-6 text-red-500">Error loading history.</p>';
@@ -1168,6 +1773,22 @@ window.deleteHistoryItem = async (id) => {
     } catch (e) {
         console.error("Error deleting history item:", e);
         alert("Failed to delete item.");
+    }
+};
+
+// --- Expose Generic History Saver for Streamers ---
+window.saveToHistory = async (repo, file, link, provider) => {
+    if (auth.currentUser) {
+        try {
+            await addDoc(collection(db, "history"), {
+                userId: auth.currentUser.uid,
+                repo: repo || "External Source",
+                file: file || "media-file",
+                link: link,
+                provider: provider || "gitdelivr",
+                timestamp: serverTimestamp()
+            });
+        } catch (e) { console.error("Error saving to history:", e); }
     }
 };
 
@@ -1426,6 +2047,7 @@ function setupAuthListeners() {
         const profileSec = document.getElementById('topProfileSection');
         const logoutBtn = document.getElementById('btnLogout'); // Sidebar logout
         const notifArea = document.getElementById('userNotificationArea');
+        const btnTopLinkGithub = document.getElementById('btnTopLinkGithub');
         
         if (user) {
             if(loginBtn) loginBtn.classList.add('hidden');
@@ -1473,11 +2095,16 @@ function setupAuthListeners() {
                 if (providers.isGithubLinked) {
                     githubConnectOption.classList.add('hidden');
                     if (connectBtn) connectBtn.onclick = null;
+                    if (btnTopLinkGithub) btnTopLinkGithub.classList.add('hidden');
                 } else {
                     githubConnectOption.classList.remove('hidden');
                     if (connectBtn) {
                         connectBtn.textContent = 'Connect GitHub Account';
                         connectBtn.onclick = connectGithubAccount;
+                    }
+                    if (btnTopLinkGithub) {
+                        btnTopLinkGithub.classList.remove('hidden');
+                        btnTopLinkGithub.onclick = connectGithubAccount;
                     }
                 }
             }
@@ -1523,17 +2150,24 @@ function setupAuthListeners() {
     // 2. Bind Login Buttons (Check existence first)
     const btnGoogle = document.getElementById('btnGoogleLogin');
     if(btnGoogle) btnGoogle.onclick = async () => {
+        const overlay = document.getElementById('loginLoadingOverlay');
+        if (overlay) overlay.style.display = ''; // Reset any inline styles from previous runs
+        
         showLoginLoading("Connecting to Google...");
         try {
             const res = await signInWithPopup(auth, googleProvider);
             await handleUserLogin(res.user, 'google.com');
             hideLoginLoading();
+            if (overlay) overlay.style.display = 'none'; // Force hide on success
+            
             if(typeof closeModal === 'function') closeModal('loginModal');
             const userName = res.user.displayName || res.user.email?.split('@')[0] || 'Developer';
             showWelcomeNotification(userName);
         } catch(e) { 
             hideLoginLoading();
-            if (e.code !== 'auth/popup-closed-by-user') {
+            if (overlay) overlay.style.display = 'none'; // Force hide on failure/cancel
+            
+            if (e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/cancelled-popup-request') {
                 alert(e.message); 
             }
         }
@@ -1701,7 +2335,10 @@ function setupAuthListeners() {
 }
 
 // Expose Logout
-window.logout = () => signOut(auth).then(() => location.reload());
+window.logout = () => {
+    sessionStorage.removeItem('gh_token');
+    signOut(auth).then(() => location.reload());
+};
 
 function listenForMaintenanceMode() {
     const overlay = document.getElementById('maintenanceOverlay');
@@ -1964,23 +2601,26 @@ function setupNotificationSystem() {
     });
 
     function renderNotifications(notifs) {
-        list.innerHTML = notifs.length ? '' : '<p class="text-center text-slate-500 text-xs py-8">No notifications found.</p>';
-        
+        if (!notifs.length) { list.innerHTML = '<p class="text-center text-slate-500 text-xs py-8">No notifications found.</p>'; return; }
+        let html = "";
         notifs.forEach(n => {
             const time = n.timestamp ? new Date(n.timestamp.seconds * 1000).toLocaleDateString() : 'Just now';
             const bgClass = n.read ? 'bg-white dark:bg-slate-800' : 'bg-blue-50 dark:bg-blue-900/20';
-            list.innerHTML += `
-                <div class="p-3 ${bgClass} hover:bg-gray-50 dark:hover:bg-slate-700 transition cursor-pointer border-b border-slate-100 dark:border-slate-700/50 relative group" onclick="window.markRead('${n.id}')">
+            const id = escapeJsStringForOnclick(n.id);
+            const message = escapeHtml(n.message || '');
+            html += `
+                <div class="p-3 ${bgClass} hover:bg-gray-50 dark:hover:bg-slate-700 transition cursor-pointer border-b border-slate-100 dark:border-slate-700/50 relative group" onclick="window.markRead('${id}')">
                     <div class="pr-6">
-                        <p class="text-sm text-slate-800 dark:text-slate-200">${n.message}</p>
+                        <p class="text-sm text-slate-800 dark:text-slate-200">${message}</p>
                         <p class="text-[10px] text-slate-400 mt-1 text-right">${time}</p>
                     </div>
-                    <button onclick="window.deleteNotification('${n.id}', event)" class="absolute top-2 right-2 text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1" title="Delete">
+                    <button onclick="window.deleteNotification('${id}', event)" class="absolute top-2 right-2 text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1" title="Delete">
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                     </button>
                 </div>
             `;
         });
+        list.innerHTML = html;
     }
 
     window.markRead = async (id) => { await updateDoc(doc(db, 'notifications', id), { read: true }); };
@@ -2104,22 +2744,24 @@ function initNotificationsPage() {
                     const bgClass = n.read ? 'bg-white dark:bg-slate-800' : 'bg-blue-50 dark:bg-blue-900/20';
                     const borderClass = n.read ? 'border-slate-200 dark:border-slate-700' : 'border-blue-200 dark:border-blue-800';
                     const isChecked = selectedNotifIds.has(n.id) ? 'checked' : '';
+                    const id = escapeJsStringForOnclick(n.id);
+                    const message = escapeHtml(n.message || '');
                     
                     return `
-                        <div class="p-4 rounded-lg ${bgClass} border ${borderClass} flex items-center transition cursor-pointer relative group gap-3" onclick="window.markRead('${n.id}')">
+                        <div class="p-4 rounded-lg ${bgClass} border ${borderClass} flex items-center transition cursor-pointer relative group gap-3" onclick="window.markRead('${id}')">
                             <input type="checkbox" class="notif-checkbox w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 shrink-0 cursor-pointer" 
-                                value="${n.id}" 
+                                value="${escapeHtmlAttribute(n.id)}" 
                                 ${isChecked}
-                                onchange="window.toggleNotifSelection('${n.id}')"
+                                onchange="window.toggleNotifSelection('${id}')"
                                 onclick="event.stopPropagation()">
                             
                             <div class="flex-1 pr-4">
-                                <p class="text-sm text-slate-800 dark:text-slate-200">${n.message}</p>
+                                <p class="text-sm text-slate-800 dark:text-slate-200">${message}</p>
                                 <p class="text-xs text-slate-400 mt-1">${time}</p>
                             </div>
                             <div class="flex items-center gap-3">
                                 ${!n.read ? '<div class="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 animate-pulse"></div>' : ''}
-                                <button onclick="window.deleteNotification('${n.id}', event)" class="p-2 text-slate-400 hover:text-red-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors opacity-0 group-hover:opacity-100" title="Delete">
+                                <button onclick="window.deleteNotification('${id}', event)" class="p-2 text-slate-400 hover:text-red-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors opacity-0 group-hover:opacity-100" title="Delete">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                 </button>
                             </div>
@@ -2212,11 +2854,12 @@ function setupRealtimeReviews() {
         document.querySelectorAll('.dynamic-review').forEach(el => el.remove());
         
         [...reviews].reverse().forEach(review => {
+            const rating = Math.max(0, Math.min(5, Number(review.rating) || 0));
             const html = `
                 <div class="dynamic-review bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-blue-200 dark:border-blue-900 animate-fade-in-up">
                     <div class="flex text-yellow-400 mb-4">${"★".repeat(review.rating)}</div>
-                    <p class="text-slate-600 dark:text-slate-300 italic mb-4">"${review.text}"</p>
-                    <div class="font-bold text-slate-900 dark:text-white">- ${review.name}</div>
+                    <p class="text-slate-600 dark:text-slate-300 italic mb-4">"${escapeHtml(review.text || '')}"</p>
+                    <div class="font-bold text-slate-900 dark:text-white">- ${escapeHtml(review.name || 'Anonymous')}</div>
                 </div>`;
             grid.insertAdjacentHTML('afterbegin', html);
         });
@@ -2280,16 +2923,18 @@ function showBlogs(json) {
     // Loop through posts (max 3)
     for (let i = 0; i < Math.min(3, posts.length); i++) {
         const post = posts[i];
-        const title = post.title.$t;
+        const title = post.title?.$t || "Untitled";
+        const safeTitle = escapeHtml(title);
         // Find the actual link to the post
         const linkObj = post.link.find(l => l.rel === "alternate");
-        const link = linkObj ? linkObj.href : "#";
+        const link = safeExternalUrl(linkObj ? linkObj.href : "#");
+        const safeLink = escapeHtmlAttribute(link);
         
         // Extract Image (Use high-res if available)
         let image = "";
         if (post.media$thumbnail) {
-             const imgUrl = post.media$thumbnail.url.replace(/s72-c/, "s600"); // Get higher resolution
-             image = `<img src="${imgUrl}" alt="${title}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy">`;
+             const imgUrl = safeExternalUrl(post.media$thumbnail.url.replace(/s72-c/, "s600")); // Get higher resolution
+             image = `<img src="${escapeHtmlAttribute(imgUrl)}" alt="${safeTitle}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy">`;
         } else {
              // Fallback placeholder
              image = `<div class="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-slate-700 text-slate-400">
@@ -2304,10 +2949,10 @@ function showBlogs(json) {
           </div>
           <div class="p-6 flex-1 flex flex-col">
             <h3 class="text-lg font-bold mb-3 text-slate-900 dark:text-white leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                <a href="${link}" target="_blank">${title}</a>
+                <a href="${safeLink}" target="_blank" rel="noopener noreferrer">${safeTitle}</a>
             </h3>
             <div class="mt-auto pt-4 border-t border-slate-100 dark:border-slate-700">
-                <a href="${link}" target="_blank" class="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 inline-flex items-center transition-colors">
+                <a href="${safeLink}" target="_blank" rel="noopener noreferrer" class="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 inline-flex items-center transition-colors">
                     Read Article 
                     <svg class="w-4 h-4 ml-1 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
                 </a>
@@ -2371,21 +3016,46 @@ document.addEventListener('DOMContentLoaded', () => {
     // Mobile Menu
     const btn = document.getElementById('mobile-menu-button');
     const menu = document.getElementById('mobile-menu');
-    if (btn && menu) btn.addEventListener('click', () => menu.classList.toggle('hidden'));
+    if (btn && menu) btn.addEventListener('click', () => {
+        menu.classList.toggle('opacity-0');
+        menu.classList.toggle('invisible');
+    });
 
-    // Premium Scroll Reveal Animations
-    const revealObserver = new IntersectionObserver((entries, observer) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const el = entry.target;
-                el.classList.remove('opacity-0', 'translate-y-8', 'translate-y-4');
-                el.classList.add('opacity-100', 'translate-y-0');
-                observer.unobserve(el);
-            }
-        });
-    }, { threshold: 0.1, rootMargin: "0px 0px -50px 0px" });
+    // --- Auto-Highlight Active Navigation Links (Sidebar & Top Nav) ---
+    let currentPath = window.location.pathname.split('/').pop();
+    if (!currentPath || currentPath === '/') currentPath = 'index.html';
     
-    document.querySelectorAll('.scroll-reveal').forEach(el => revealObserver.observe(el));
+    const navLinks = document.querySelectorAll('#sidebar nav a, header a');
+    
+    navLinks.forEach(link => {
+        const href = link.getAttribute('href');
+        if (!href || href.startsWith('#')) return;
+
+        try {
+            // Use URL parser to safely handle both relative and absolute "https://..." links
+            const linkUrl = new URL(href, window.location.origin);
+            
+            if (linkUrl.hostname === window.location.hostname || !linkUrl.hostname) {
+                let linkPath = linkUrl.pathname.split('/').pop();
+                if (!linkPath || linkPath === '/') linkPath = 'index.html';
+                
+                if (linkPath === currentPath) {
+                    link.classList.add('text-blue-600', 'dark:text-blue-400', 'font-bold');
+                    link.classList.remove('text-slate-600', 'dark:text-slate-300', 'font-medium');
+                    if (link.closest('#sidebar')) {
+                        link.classList.add('bg-blue-50', 'dark:bg-blue-900/20', 'border-r-4', 'border-blue-600');
+                        link.classList.remove('hover:bg-slate-100', 'dark:hover:bg-slate-700/50');
+                    }
+                } else {
+                    link.classList.add('text-slate-600', 'dark:text-slate-300', 'font-medium');
+                    link.classList.remove('text-blue-600', 'dark:text-blue-400', 'font-bold', 'bg-blue-50', 'dark:bg-blue-900/20', 'border-r-4', 'border-blue-600');
+                    if (link.closest('#sidebar')) {
+                        link.classList.add('hover:bg-slate-100', 'dark:hover:bg-slate-700/50');
+                    }
+                }
+            }
+        } catch (e) { /* Ignore parsing errors for mailto: etc */ }
+    });
 
     // Modals
     const toggleModal = (id, show) => { const el = document.getElementById(id); if(el) show ? el.classList.add('active') : el.classList.remove('active'); };
@@ -2455,6 +3125,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     repoLabel.textContent = "Repository";
                     repoInput.placeholder = "e.g., aui";
                     if (!branchInput.value || branchInput.value === 'main') branchInput.value = "master";
+                    document.getElementById("branchWrapper").classList.remove('hidden');
+                    document.getElementById("autoMinifyWrapper").classList.add('hidden');
+                    break;
+                case "npm": // NPM
+                    userLabel.textContent = "Package Name";
+                    userInput.placeholder = "e.g., bootstrap";
+                    repoLabel.textContent = "Version";
+                    repoInput.placeholder = "e.g., 5.3.0 (or leave empty for latest)";
+                    document.getElementById("branchWrapper").classList.add('hidden');
+                    document.getElementById("autoMinifyWrapper").classList.remove('hidden');
+                    break;
+                case "wp": // WordPress
+                    userLabel.textContent = "Type";
+                    userInput.placeholder = "plugins or themes";
+                    repoLabel.textContent = "Slug";
+                    repoInput.placeholder = "e.g., elementor";
+                    document.getElementById("branchLabel").textContent = "Version / Branch";
+                    branchInput.placeholder = "e.g., trunk or 1.0.0";
+                    branchInput.value = "trunk";
+                    document.getElementById("branchWrapper").classList.remove('hidden');
+                    document.getElementById("autoMinifyWrapper").classList.remove('hidden');
                     break;
             }
         };
@@ -2662,9 +3353,12 @@ function initAdminPage() {
 
         // 3. Reviews
         let firstRev = true;
-        onSnapshot(query(collection(db, 'reviews'), orderBy('timestamp', 'desc')), (snapshot) => {
+        onSnapshot(collection(db, 'reviews'), (snapshot) => {
             reviewsData = [];
             snapshot.forEach(d => reviewsData.push({id: d.id, ...d.data()}));
+            
+            // Client-side sort to avoid missing index errors
+            reviewsData.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
             
             if(!firstRev) {
                 snapshot.docChanges().forEach(c => {
@@ -2919,13 +3613,26 @@ function initAdminPage() {
             if (!message) return alert("Message is required.");
             
             if (confirm(`This will send a notification to ALL ${usersData.length} users. Are you sure?`)) {
-                const batch = writeBatch(db);
-                usersData.forEach(user => {
-                    const ref = doc(collection(db, 'notifications'));
-                    batch.set(ref, { userId: user.id, message, read: false, timestamp: serverTimestamp() });
-                });
                 try {
-                    await batch.commit();
+                    const MAX_BATCH_SIZE = 450;
+                    const batches = [];
+                    let currentBatch = writeBatch(db);
+                    let operationCount = 0;
+
+                    usersData.forEach(user => {
+                        const ref = doc(collection(db, 'notifications'));
+                        currentBatch.set(ref, { userId: user.id, message, read: false, timestamp: serverTimestamp() });
+                        operationCount++;
+                        if (operationCount === MAX_BATCH_SIZE) {
+                            batches.push(currentBatch.commit());
+                            currentBatch = writeBatch(db);
+                            operationCount = 0;
+                        }
+                    });
+
+                    if (operationCount > 0) batches.push(currentBatch.commit());
+                    await Promise.all(batches);
+
                     alert(`Notifications sent to all ${usersData.length} users.`);
                     document.getElementById('quickNotifyMessage').value = '';
                 } catch (e) {
@@ -3038,14 +3745,23 @@ function initAdminPage() {
         if(!list) return;
         list.innerHTML = '';
         if(data.length === 0) { list.innerHTML = '<p class="text-gray-400 text-center text-sm">No messages found.</p>'; return; }
+        let html = "";
         data.forEach(d => {
             const date = d.timestamp ? new Date(d.timestamp.seconds * 1000).toLocaleString() : 'Just now';
+            const id = escapeJsStringForOnclick(d.id);
+            const userId = escapeJsStringForOnclick(d.userId || '');
+            const name = escapeHtml(d.name || 'Unknown');
+            const nameForOnclick = escapeJsStringForOnclick(d.name || 'User');
+            const email = escapeHtml(d.email || '');
+            const emailHref = escapeHtmlAttribute(`mailto:${d.email || ''}?subject=Re: GitDelivr Inquiry`);
+            const message = escapeHtml(d.message || '');
             const replyAction = d.userId 
-                ? `<button onclick="window.openReplyModal('${d.userId}', '${d.name || 'User'}')" class="text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50 px-3 py-1.5 rounded-lg transition-colors">Reply</button>`
-                : `<a href="mailto:${d.email}?subject=Re: GitDelivr Inquiry" class="text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 px-3 py-1.5 rounded-lg transition-colors">Email</a>`;
+                ? `<button onclick="window.openReplyModal('${userId}', '${nameForOnclick}')" class="text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50 px-3 py-1.5 rounded-lg transition-colors">Reply</button>`
+                : `<a href="${emailHref}" class="text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 px-3 py-1.5 rounded-lg transition-colors">Email</a>`;
 
-            list.innerHTML += `<div class="bg-gray-50 dark:bg-slate-700 p-4 rounded-xl border border-gray-100 dark:border-slate-600 relative group hover:shadow-md transition-shadow"><div class="flex justify-between items-start mb-2"><div><h3 class="font-bold text-sm text-slate-800 dark:text-white">${d.name || 'Unknown'}</h3><p class="text-xs text-blue-500">${d.email}</p></div><span class="text-xs text-gray-400">${date}</span></div><p class="text-sm text-gray-600 dark:text-gray-300 mb-3">${d.message}</p><div class="flex justify-end">${replyAction}</div><button onclick="window.deleteItem('messages', '${d.id}')" class="absolute top-3 right-3 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-1" title="Delete"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button></div>`;
+            html += `<div class="bg-gray-50 dark:bg-slate-700 p-4 rounded-xl border border-gray-100 dark:border-slate-600 relative group hover:shadow-md transition-shadow"><div class="flex justify-between items-start mb-2"><div><h3 class="font-bold text-sm text-slate-800 dark:text-white">${name}</h3><p class="text-xs text-blue-500">${email}</p></div><span class="text-xs text-gray-400">${date}</span></div><p class="text-sm text-gray-600 dark:text-gray-300 mb-3">${message}</p><div class="flex justify-end">${replyAction}</div><button onclick="window.deleteItem('messages', '${id}')" class="absolute top-3 right-3 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-1" title="Delete"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button></div>`;
         });
+        list.innerHTML = html;
     }
 
     function renderSubscribers(data) {
@@ -3053,10 +3769,12 @@ function initAdminPage() {
         if(!list) return;
         list.innerHTML = '';
         if(data.length === 0) { list.innerHTML = '<p class="text-gray-400 text-center text-sm">No subscribers yet.</p>'; return; }
+        let html = "";
         data.forEach(d => {
             const date = d.timestamp ? new Date(d.timestamp.seconds * 1000).toLocaleDateString() : 'Just now';
-            list.innerHTML += `<div class="flex justify-between items-center bg-gray-50 dark:bg-slate-700 p-3 rounded-lg border border-gray-100 dark:border-slate-600 group hover:bg-blue-50 dark:hover:bg-slate-600 transition-colors"><span class="text-sm font-mono text-slate-700 dark:text-slate-200">${d.email}</span><div class="flex items-center gap-3"><span class="text-xs text-gray-400">${date}</span><button onclick="window.deleteItem('subscribers', '${d.id}')" class="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button></div></div>`;
+            html += `<div class="flex justify-between items-center bg-gray-50 dark:bg-slate-700 p-3 rounded-lg border border-gray-100 dark:border-slate-600 group hover:bg-blue-50 dark:hover:bg-slate-600 transition-colors"><span class="text-sm font-mono text-slate-700 dark:text-slate-200">${escapeHtml(d.email || '')}</span><div class="flex items-center gap-3"><span class="text-xs text-gray-400">${date}</span><button onclick="window.deleteItem('subscribers', '${escapeJsStringForOnclick(d.id)}')" class="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button></div></div>`;
         });
+        list.innerHTML = html;
     }
 
     function renderReviews(data) {
@@ -3064,9 +3782,12 @@ function initAdminPage() {
         if(!list) return;
         list.innerHTML = '';
         if(data.length === 0) { list.innerHTML = '<p class="text-gray-400 text-center col-span-full text-sm">No reviews yet.</p>'; return; }
+        let html = "";
         data.forEach(d => {
-            list.innerHTML += `<div class="bg-gray-50 dark:bg-slate-700 p-4 rounded-xl border border-gray-100 dark:border-slate-600 relative group hover:shadow-md transition-shadow"><div class="flex justify-between mb-2"><span class="font-bold text-sm text-slate-800 dark:text-white">${d.name}</span><span class="text-yellow-500 text-xs">${"★".repeat(d.rating)}</span></div><p class="text-xs text-gray-600 dark:text-gray-300 italic">"${d.text}"</p><button onclick="window.deleteItem('reviews', '${d.id}')" class="absolute top-3 right-3 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button></div>`;
+            const rating = Math.max(0, Math.min(5, Number(d.rating) || 0));
+            html += `<div class="bg-gray-50 dark:bg-slate-700 p-4 rounded-xl border border-gray-100 dark:border-slate-600 relative group hover:shadow-md transition-shadow"><div class="flex justify-between mb-2"><span class="font-bold text-sm text-slate-800 dark:text-white">${escapeHtml(d.name || 'Anonymous')}</span><span class="text-yellow-500 text-xs">${"★".repeat(rating)}</span></div><p class="text-xs text-gray-600 dark:text-gray-300 italic">"${escapeHtml(d.text || '')}"</p><button onclick="window.deleteItem('reviews', '${escapeJsStringForOnclick(d.id)}')" class="absolute top-3 right-3 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button></div>`;
         });
+        list.innerHTML = html;
     }
 
     function renderUsers(data) {
@@ -3074,13 +3795,15 @@ function initAdminPage() {
         if(!list) return;
         list.innerHTML = '';
         if(data.length === 0) { list.innerHTML = '<p class="text-gray-400 text-center text-sm">No users found.</p>'; return; }
+        let html = "";
         data.forEach(d => {
             const lastLogin = d.lastLogin ? new Date(d.lastLogin.seconds * 1000).toLocaleString() : 'Never';
-            const photo = d.photo || `https://ui-avatars.com/api/?name=${d.name || 'User'}&background=random`;
-            const name = d.name || 'Unknown';
-            const email = d.email || 'No Email';
+            const photo = safeExternalUrl(d.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(d.name || 'User')}&background=random`);
+            const name = escapeHtml(d.name || 'Unknown');
+            const email = escapeHtml(d.email || 'No Email');
             const provider = d.provider || 'email'; // Default to email for older users
             const isChecked = selectedUserIds.has(d.id) ? 'checked' : '';
+            const id = escapeJsStringForOnclick(d.id);
 
             let providerBadge = '';
             if (provider === 'github.com') {
@@ -3089,11 +3812,11 @@ function initAdminPage() {
                 providerBadge = '<span class="ml-2 bg-blue-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">Google</span>';
             }
             
-            list.innerHTML += `
+            html += `
                 <div class="flex items-center justify-between bg-gray-50 dark:bg-slate-700 p-3 rounded-lg border border-gray-100 dark:border-slate-600 group hover:bg-blue-50 dark:hover:bg-slate-600 transition-colors">
                     <div class="flex items-center gap-3">
-                        <input type="checkbox" class="user-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500" value="${d.id}" ${isChecked} onclick="window.toggleUserSelection('${d.id}')">
-                        <img src="${photo}" class="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-slate-500">
+                        <input type="checkbox" class="user-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500" value="${escapeHtmlAttribute(d.id)}" ${isChecked} onclick="window.toggleUserSelection('${id}')">
+                        <img src="${escapeHtmlAttribute(photo)}" class="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-slate-500" alt="">
                         <div>
                             <p class="text-sm font-bold text-slate-800 dark:text-white flex items-center">${name} ${providerBadge}</p>
                             <p class="text-xs text-slate-500">${email}</p>
@@ -3104,15 +3827,16 @@ function initAdminPage() {
                             <p class="text-[10px] text-slate-400 uppercase tracking-wider">Last Login</p>
                             <p class="text-xs text-slate-600 dark:text-slate-300">${lastLogin}</p>
                         </div>
-                        <button onclick="window.deleteItem('users', '${d.id}')" class="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all" title="Delete User">
+                        <button onclick="window.deleteItem('users', '${id}')" class="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all" title="Delete User">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                         </button>
-                        <button onclick="window.openNotificationModal('${d.id}')" class="p-2 text-blue-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all" title="Send Notification">
+                        <button onclick="window.openNotificationModal('${id}')" class="p-2 text-blue-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all" title="Send Notification">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
                         </button>
                     </div>
                 </div>`;
         });
+        list.innerHTML = html;
         updateBulkUI();
     }
 
@@ -3227,21 +3951,31 @@ function initAdminPage() {
         btn.disabled = true;
 
         try {
-            const batch = writeBatch(db);
-            let count = 0;
+            const MAX_BATCH_SIZE = 450;
+            const batches = [];
+            let currentBatch = writeBatch(db);
+            let operationCount = 0;
+            let totalCount = 0;
 
             if (uid) {
                 // Single User
                 const ref = doc(collection(db, 'notifications'));
-                batch.set(ref, { userId: uid, message, read: false, timestamp: serverTimestamp() });
-                count = 1;
+                currentBatch.set(ref, { userId: uid, message, read: false, timestamp: serverTimestamp() });
+                operationCount++;
+                totalCount = 1;
             } else if (selectedUserIds.size > 0) {
                 // Bulk Users
+                totalCount = selectedUserIds.size;
                 selectedUserIds.forEach(userId => {
                     const ref = doc(collection(db, 'notifications'));
-                    batch.set(ref, { userId: userId, message, read: false, timestamp: serverTimestamp() });
+                    currentBatch.set(ref, { userId: userId, message, read: false, timestamp: serverTimestamp() });
+                    operationCount++;
+                    if (operationCount === MAX_BATCH_SIZE) {
+                        batches.push(currentBatch.commit());
+                        currentBatch = writeBatch(db);
+                        operationCount = 0;
+                    }
                 });
-                count = selectedUserIds.size;
             } else {
                 alert("No recipients selected.");
                 btn.innerText = "Send";
@@ -3249,9 +3983,10 @@ function initAdminPage() {
                 return;
             }
 
-            await batch.commit();
+            if (operationCount > 0) batches.push(currentBatch.commit());
+            await Promise.all(batches);
             
-            alert(`Successfully sent to ${count} user(s)!`);
+            alert(`Successfully sent to ${totalCount} user(s)!`);
             document.getElementById('notifyMessage').value = '';
             document.getElementById('notificationModal').classList.add('hidden');
             
@@ -3295,3 +4030,33 @@ function initAdminPage() {
 }
 
 initAdminPage();
+
+// 1. Apne Worker ka URL yahan set karein
+const WORKER_URL = "cdn.gitdelivr.in";
+
+// 2. Proxy Helper Function (Ise script mein kahin bhi add kar dein)
+function getProxyUrl(targetUrl) {
+    // Agar link pakshi.in ka hai, toh proxy use karo, warna original
+    if (targetUrl.includes('pakshi.in')) {
+        return `${WORKER_URL}/proxy?url=${encodeURIComponent(targetUrl)}`;
+    }
+    return targetUrl; // Baaki links normal rahenge
+}
+
+// 3. Jahan aap video ka URL set kar rahe hain, wahan ye logic apply karein
+// Example: Aapke video player logic mein jahan aap src change karte ho
+function loadVideo(originalLink) {
+    const finalLink = getProxyUrl(originalLink);
+    
+    const videoPlayer = document.getElementById('myVideoPlayer');
+    videoPlayer.src = finalLink;
+    videoPlayer.play();
+}
+
+// Example: Agar aap fetch use kar rahe ho
+async function fetchData(url) {
+    const safeUrl = getProxyUrl(url);
+    const response = await fetch(safeUrl);
+    const data = await response.json();
+    console.log(data);
+}

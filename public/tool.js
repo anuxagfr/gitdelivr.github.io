@@ -286,6 +286,7 @@ if (provider === 'gitdelivr') {
     cdnUrl = `https://cdn.jsdelivr.net/gh/${user}/${repo}@${branch}/${filePath}`;
 } else if (provider === 'statically') {
     cdnUrl = `https://pagedelivr.statically.io/gh/${user}/${repo}@${branch}/${filePath}`;
+}
 
         document.getElementById('outputContainer').classList.remove('hidden');
         document.getElementById('generatedLink').innerText = cdnUrl;

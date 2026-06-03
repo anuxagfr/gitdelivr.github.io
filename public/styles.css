@@ -254,3 +254,26 @@ input:focus, textarea:focus {
     transition: opacity 0.3s, visibility 0.3s;
 }
 #customAlert.show { opacity: 1; visibility: visible; }
+
+/* Settings Accordion Animation */
+.settings-accordion {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.3s ease-in-out, opacity 0.3s ease-in-out;
+    opacity: 0;
+    pointer-events: none;
+}
+.settings-accordion.open {
+    grid-template-rows: 1fr;
+    opacity: 1;
+    pointer-events: auto;
+}
+.settings-accordion-inner {
+    overflow: hidden;
+}
+.settings-chevron {
+    transition: transform 0.3s ease-in-out;
+}
+.settings-chevron.open {
+    transform: rotate(180deg);
+}

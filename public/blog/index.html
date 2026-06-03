@@ -14,88 +14,246 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
-                    fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+                    fontFamily: { 
+                        sans: ['Inter', 'sans-serif'], 
+                        mono: ['JetBrains Mono', 'monospace'] 
+                    },
                     colors: {
-                        brand: { main: '#0B1121', card: '#151e32', blue: '#2563EB', text: '#cbd5e1', border: '#1E293B' }
+                        slate: {
+                            900: '#0f172a',
+                            800: '#1e293b',
+                            700: '#334155',
+                        },
+                        brand: { 
+                            main: '#09101f', // Matched with main site
+                            card: '#1e293b', // Lighter slate for cards
+                            blue: '#0066ff',
+                            cyan: '#00C9FF',
+                            text: '#f8fafc', 
+                            border: '#334155' 
+                        }
+                    },
+                    animation: {
+                        'dropdown-fade': 'dropdownFade 0.2s ease-out forwards',
+                    },
+                    keyframes: {
+                        dropdownFade: {
+                            '0%': { opacity: '0', transform: 'scale(0.95) translateY(-5px)' },
+                            '100%': { opacity: '1', transform: 'scale(1) translateY(0)' },
+                        }
                     }
                 }
             }
         }
     </script>
     <style type="text/tailwindcss">
-        .glass-nav { background-color: rgba(11, 17, 33, 0.95); backdrop-filter: blur(10px); }
+        body {
+            background-color: #09101f;
+            color: #f8fafc;
+            background-image: radial-gradient(circle at 50% -20%, rgba(0, 102, 255, 0.15) 0%, rgba(9, 16, 31, 1) 50%);
+        }
+        .glass-nav { 
+            background-color: rgba(9, 16, 31, 0.8); 
+            backdrop-filter: blur(12px); 
+            -webkit-backdrop-filter: blur(12px);
+        }
+        
+        /* Dropdown transition */
+        .dropdown-menu {
+            transition: all 0.2s ease-in-out;
+            transform-origin: top;
+            transform: scaleY(0.95);
+            opacity: 0;
+            visibility: hidden;
+        }
+        .group:hover .dropdown-menu {
+            transform: scaleY(1);
+            opacity: 1;
+            visibility: visible;
+        }
     </style>
 </head>
-<body class="bg-brand-main text-brand-text antialiased font-sans flex flex-col min-h-screen">
+<body class="antialiased min-h-screen flex flex-col">
 
-    <nav class="sticky top-0 z-50 glass-nav border-b border-brand-border py-4" id="navbar">
-        <div class="max-w-7xl mx-auto px-6 flex justify-between items-center">
-            <a href="/" class="flex items-center gap-2 group font-bold text-xl text-white tracking-tight">
-                <i class="fa-solid fa-bolt text-brand-blue"></i> GitDelivr
-            </a>
-            <div class="hidden lg:flex items-center gap-6 font-medium text-sm text-gray-400">
-                <a href="/public/index.html" class="text-white">Home</a>
-                <a href="/public/cdn_generator.html" class="px-4 py-2 bg-brand-blue text-white rounded hover:bg-blue-600 transition shadow-lg">Generate Link</a>
+    <!-- Premium Navbar (Consistent with main site) -->
+    <nav class="fixed w-full z-50 top-0 glass-nav border-b border-white/10 transition-all duration-300" id="navbar">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                
+                <!-- Logo Section -->
+                <div class="flex-shrink-0 flex items-center">
+                    <a href="/" class="text-2xl font-extrabold tracking-tight text-white hover:opacity-90 transition">
+                        GitDelivr<span class="text-brand-blue">.in</span>
+                    </a>
+                </div>
+
+                <!-- Desktop Menu Section -->
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="/public/index.html" class="text-slate-300 hover:text-white font-medium transition-colors text-sm">Home</a>
+                    
+                    <!-- Tools Dropdown -->
+                    <div class="relative group">
+                        <button class="flex items-center text-slate-300 hover:text-white font-medium transition-colors py-2 text-sm focus:outline-none">
+                            Tools
+                            <svg class="w-4 h-4 ml-1 text-slate-400 group-hover:text-white transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+
+                        <div class="absolute left-0 mt-2 w-56 rounded-xl shadow-2xl bg-slate-900 border border-slate-700/50 overflow-hidden dropdown-menu z-50">
+                            <div class="p-2 space-y-1">
+                                <a href="../media-streamer.html" class="flex items-center px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:bg-slate-800 hover:text-brand-cyan transition">
+                                    <span class="mr-3 text-lg"></span> Media Streamer
+                                </a>
+                                <a href="../audio-streamer.html" class="flex items-center px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:bg-slate-800 hover:text-brand-cyan transition">
+                                    <span class="mr-3 text-lg"></span> Audio Streamer
+                                </a>
+                                <a href="../site-analyzer.html" class="flex items-center px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:bg-slate-800 hover:text-brand-cyan transition">
+                                    <span class="mr-3 text-lg"></span> Site Analyzer
+                                </a>
+                                <a href="../npm-setup.html" class="flex items-center px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:bg-slate-800 hover:text-brand-cyan transition">
+                                    <span class="mr-3 text-lg"></span> NPM Guide
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <a href="/public/cdn-generator.html" class="text-slate-300 hover:text-white font-medium transition-colors text-sm">CDN Tool</a>
+                    <a href="/blog/index.html" class="text-brand-cyan font-bold transition-colors text-sm">Blog</a>
+                </div>
+
+                <!-- Action Button (Right Side) -->
+                <div class="hidden md:flex items-center space-x-4">
+                    <a href="/public/cdn-generator.html" class="bg-white text-slate-900 hover:bg-slate-200 px-5 py-2 rounded-full text-sm font-bold transition-all shadow-[0_0_15px_rgba(255,255,255,0.2)]">
+                        Generate Link
+                    </a>
+                </div>
+
+                <!-- Mobile menu button (Hamburger) -->
+                <div class="md:hidden flex items-center">
+                    <button id="mobile-menu-btn" class="text-slate-300 hover:text-white focus:outline-none">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path id="menu-icon" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-slate-900 border-b border-white/10 absolute w-full left-0 top-20 shadow-2xl">
+            <div class="px-4 py-4 space-y-2">
+                <a href="/public/index.html" class="block px-3 py-2 rounded-md text-base font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">Home</a>
+                <a href="/public/cdn-generator.html" class="block px-3 py-2 rounded-md text-base font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">CDN Tool</a>
+                
+                <!-- Mobile Tools Section -->
+                <div class="py-2 my-1 border-y border-slate-800">
+                    <span class="block px-3 py-1 text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Tools</span>
+                    <a href="../media-streamer.html" class="flex items-center px-3 py-2 rounded-md text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800 pl-6 transition">🎬 Media Streamer</a>
+                    <a href="../audio-streamer.html" class="flex items-center px-3 py-2 rounded-md text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800 pl-6 transition">🎵 Audio Streamer</a>
+                    <a href="../site-analyzer.html" class="flex items-center px-3 py-2 rounded-md text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800 pl-6 transition">⚡ Site Analyzer</a>
+                    <a href="../npm-setup.html" class="flex items-center px-3 py-2 rounded-md text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800 pl-6 transition">📦 NPM Guide</a>
+                </div>
+
+                <a href="/blog/index.html" class="block px-3 py-2 rounded-md text-base font-bold text-brand-cyan bg-slate-800/50 transition">Blog</a>
+                
+                <div class="mt-4 px-3 pt-4 border-t border-slate-800">
+                    <a href="/public/cdn-generator.html" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-full shadow-sm text-base font-bold text-slate-900 bg-white hover:bg-slate-200">
+                        Generate Link
+                    </a>
+                </div>
             </div>
         </div>
     </nav>
 
-    <header class="py-20 text-center relative overflow-hidden border-b border-brand-border" style="background: radial-gradient(circle at top, #1e293b 0%, #0B1121 70%);">
+    <!-- Header Section -->
+    <header class="pt-32 pb-16 text-center relative overflow-hidden border-b border-white/5" style="background: radial-gradient(circle at top, rgba(30,41,59,0.5) 0%, transparent 70%);">
         <div class="max-w-4xl mx-auto px-6 relative z-10">
-            <span class="text-brand-blue font-bold tracking-widest uppercase text-xs mb-4 block">Engineering & Updates</span>
-            <h1 class="text-4xl md:text-5xl font-bold text-white mb-6 tracking-tight">Building the Native Edge</h1>
-            <p class="text-gray-400 text-lg max-w-2xl mx-auto font-light">Explore release notes, architecture deep-dives, and guides on delivering your open-source assets faster.</p>
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-blue/10 border border-brand-blue/20 text-brand-cyan text-xs font-bold uppercase tracking-widest mb-6">
+                <span class="w-2 h-2 rounded-full bg-brand-cyan animate-pulse"></span>
+                Engineering & Updates
+            </div>
+            <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold text-white mb-6 tracking-tight leading-tight">
+                Building the <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">Native Edge</span>
+            </h1>
+            <p class="text-slate-400 text-lg md:text-xl max-w-2xl mx-auto font-light leading-relaxed">
+                Explore release notes, architecture deep-dives, and guides on delivering your open-source assets faster globally.
+            </p>
         </div>
     </header>
 
-    <main class="py-16 px-6 max-w-7xl mx-auto w-full flex-grow">
+    <!-- Main Content -->
+    <main class="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full flex-grow">
         
+        <!-- Category Filters -->
         <div id="category-filters" class="flex flex-wrap justify-center gap-3 mb-16">
-            <button data-category="" class="filter-btn px-5 py-2 bg-brand-blue text-white rounded-full text-sm font-medium transition">All Articles</button>
-            <button data-category="Releases" class="filter-btn px-5 py-2 bg-brand-card border border-brand-border text-gray-400 rounded-full text-sm font-medium hover:border-brand-blue hover:text-white transition">Releases</button>
-            <button data-category="Engineering" class="filter-btn px-5 py-2 bg-brand-card border border-brand-border text-gray-400 rounded-full text-sm font-medium hover:border-brand-blue hover:text-white transition">Engineering</button>
-            <button data-category="Tutorials" class="filter-btn px-5 py-2 bg-brand-card border border-brand-border text-gray-400 rounded-full text-sm font-medium hover:border-brand-blue hover:text-white transition">Tutorials</button>
+            <button data-category="" class="filter-btn px-6 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-full text-sm font-bold shadow-[0_0_15px_rgba(0,102,255,0.3)] transition-all transform hover:scale-105">All Articles</button>
+            <button data-category="Releases" class="filter-btn px-6 py-2.5 bg-slate-800/80 border border-slate-700 text-slate-300 rounded-full text-sm font-semibold hover:border-brand-cyan hover:text-white transition-all">Releases</button>
+            <button data-category="Engineering" class="filter-btn px-6 py-2.5 bg-slate-800/80 border border-slate-700 text-slate-300 rounded-full text-sm font-semibold hover:border-brand-cyan hover:text-white transition-all">Engineering</button>
+            <button data-category="Tutorials" class="filter-btn px-6 py-2.5 bg-slate-800/80 border border-slate-700 text-slate-300 rounded-full text-sm font-semibold hover:border-brand-cyan hover:text-white transition-all">Tutorials</button>
         </div>
 
+        <!-- Blog Posts Grid -->
         <div id="blog-posts-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
-            <div class="col-span-full text-center py-20 text-gray-500">
-                <i class="fa-solid fa-circle-notch fa-spin text-3xl mb-4 text-brand-blue"></i>
-                <p>Fetching from Edge...</p>
+            <div class="col-span-full text-center py-20 text-slate-500">
+                <i class="fa-solid fa-circle-notch fa-spin text-4xl mb-4 text-brand-blue"></i>
+                <p class="text-lg font-medium">Fetching from Edge...</p>
             </div>
         </div>
     </main>
 
-    <footer class="bg-[#020617] text-gray-500 py-10 border-t border-brand-border text-center text-sm">
-        <p>&copy; 2026 GitDelivr. Built by Developers, for Developers.</p>
+    <!-- Footer -->
+    <footer class="bg-slate-900/80 backdrop-blur-sm text-slate-400 py-8 border-t border-slate-800 mt-auto">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p class="text-sm">&copy; 2026 GitDelivr. All rights reserved.</p>
+            <div class="flex gap-6">
+                <a href="#" class="hover:text-white transition"><i class="fa-brands fa-github text-lg"></i></a>
+                <a href="#" class="hover:text-brand-cyan transition"><i class="fa-brands fa-twitter text-lg"></i></a>
+                <a href="https://t.me/gitdelivr" target="_blank" class="hover:text-blue-500 transition"><i class="fa-brands fa-telegram text-lg"></i></a>
+            </div>
+        </div>
     </footer>
 
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/contentful@latest/dist/contentful.browser.min.js"></script>
     
     <script>
-        // --- CONFIGURATION ---
+        // --- MOBILE MENU LOGIC ---
+        const btn = document.getElementById('mobile-menu-btn');
+        const menu = document.getElementById('mobile-menu');
+        const icon = document.getElementById('menu-icon');
+
+        btn.addEventListener('click', () => {
+            menu.classList.toggle('hidden');
+            if (menu.classList.contains('hidden')) {
+                icon.setAttribute('d', 'M4 6h16M4 12h16M4 18h16');
+            } else {
+                icon.setAttribute('d', 'M6 18L18 6M6 6l12 12');
+            }
+        });
+
+        // --- CONTENTFUL INTEGRATION ---
         const SPACE_ID = 'guwiw3f81shk';
         const ACCESS_TOKEN = 'MaRT24JyPHiRR7cbc7Mq0L8kUHUOHsN9__Ot1fHqGZs';
         const CONTENT_TYPE = 'blogPost';
 
         const client = contentful.createClient({ space: SPACE_ID, accessToken: ACCESS_TOKEN });
 
-        // --- MOCK DATA (GitDelivr Context) ---
+        // --- MOCK DATA ---
         const MOCK_POSTS = [
             {
                 sys: { id: 'mock-1', createdAt: '2026-03-01T00:00:00Z' },
                 fields: {
-                    title: 'Introducing GitDelivr V3.0 Native Edition',
-                    slug: 'gitdelivr-v3-launch',
+                    title: 'Introducing GitDelivr V3.5 Native Edition',
+                    slug: 'gitdelivr-v3-5-launch',
                     excerpt: 'We have completely rebuilt our infrastructure to serve developers better. Sub-10ms latency globally.',
                     category: 'Releases',
                     publishedDate: '2026-03-01',
-                    // Image URL as a real unsplash link, not just a sys ID
                     coverImage: { fields: { file: { url: '//images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=800' } } }
                 }
             },
@@ -132,7 +290,7 @@
 
         function renderPosts(posts) {
             if (posts.length === 0) {
-                container.innerHTML = '<div class="col-span-full text-center py-10 text-gray-500">No articles found in this category.</div>';
+                container.innerHTML = '<div class="col-span-full text-center py-10 text-slate-500 bg-slate-800/30 rounded-2xl border border-slate-700/50">No articles found in this category.</div>';
                 return;
             }
 
@@ -142,7 +300,7 @@
                 const postLink = `blog-post.html?id=${id}`;
                 
                 const imgField = image || coverImage;
-                let imageUrl = 'https://images.unsplash.com/photo-1558494949-ef248ac84f83?q=80&w=800'; // Fallback laptop image
+                let imageUrl = 'https://images.unsplash.com/photo-1558494949-ef248ac84f83?q=80&w=800'; 
                 if (imgField && imgField.fields && imgField.fields.file) {
                     let url = imgField.fields.file.url;
                     imageUrl = url.startsWith('http') ? url : 'https:' + url;
@@ -150,9 +308,8 @@
 
                 const date = publishedDate ? formatDate(publishedDate) : formatDate(post.sys.createdAt);
                 
-                // Author extraction logic
                 let authorName = 'GitDelivr Team';
-                let authorAvatar = 'https://ui-avatars.com/api/?name=GitDelivr&background=2563EB&color=fff';
+                let authorAvatar = 'https://ui-avatars.com/api/?name=GitDelivr&background=00C9FF&color=000';
                 
                 if (author && author.fields) {
                     authorName = author.fields.name || authorName;
@@ -160,33 +317,34 @@
                         let url = author.fields.avatar.fields.file.url;
                         authorAvatar = url.startsWith('http') ? url : 'https:' + url;
                     } else {
-                        authorAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(authorName)}&background=2563EB&color=fff`;
+                        authorAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(authorName)}&background=00C9FF&color=000`;
                     }
                 } else if (rawAuthorName) {
                     authorName = rawAuthorName;
-                    authorAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(authorName)}&background=2563EB&color=fff`;
+                    authorAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(authorName)}&background=00C9FF&color=000`;
                 }
 
                 return `
-                <article class="bg-brand-card rounded-xl overflow-hidden border border-brand-border group hover:border-brand-blue transition-all duration-300 flex flex-col transform hover:-translate-y-1">
-                    <div class="relative h-48 overflow-hidden bg-[#0f1524]">
-                        <img src="${imageUrl}" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" alt="${title}">
-                        ${category ? `<div class="absolute top-4 left-4 bg-[rgba(37,99,235,0.2)] text-brand-blue text-xs font-bold px-3 py-1 uppercase tracking-widest rounded-full border border-[rgba(37,99,235,0.3)]">${category}</div>` : ''}
+                <article class="bg-brand-card rounded-2xl overflow-hidden border border-brand-border hover:border-brand-cyan/50 hover:shadow-[0_0_30px_rgba(0,201,255,0.1)] transition-all duration-300 flex flex-col transform hover:-translate-y-2 group">
+                    <div class="relative h-52 overflow-hidden bg-slate-900">
+                        <img src="${imageUrl}" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700 ease-out" alt="${title}">
+                        <div class="absolute inset-0 bg-gradient-to-t from-brand-card to-transparent opacity-60"></div>
+                        ${category ? `<div class="absolute top-4 left-4 bg-slate-900/80 backdrop-blur-sm text-brand-cyan text-[10px] font-bold px-3 py-1.5 uppercase tracking-widest rounded-full border border-brand-cyan/20 shadow-lg">${category}</div>` : ''}
                     </div>
-                    <div class="p-6 flex flex-col flex-grow">
-                        <div class="flex items-center gap-2 mb-4 text-xs text-gray-500">
-                            <img src="${authorAvatar}" alt="${authorName}" class="w-6 h-6 rounded-full object-cover border border-brand-border">
-                            <span class="font-medium text-gray-300">${authorName}</span>
-                            <span class="text-gray-600">•</span>
-                            <span><i class="fa-regular fa-calendar mr-1"></i> ${date}</span>
+                    <div class="p-6 flex flex-col flex-grow relative z-10">
+                        <div class="flex items-center gap-3 mb-4 text-xs text-slate-400">
+                            <img src="${authorAvatar}" alt="${authorName}" class="w-7 h-7 rounded-full object-cover border border-slate-700">
+                            <span class="font-semibold text-slate-300">${authorName}</span>
+                            <span class="w-1 h-1 rounded-full bg-slate-700"></span>
+                            <span class="font-medium"><i class="fa-regular fa-calendar mr-1 opacity-70"></i> ${date}</span>
                         </div>
-                        <h3 class="text-xl font-bold text-white mb-3 group-hover:text-brand-blue transition-colors leading-tight">
-                            <a href="${postLink}" class="focus:outline-none">${title}</a>
+                        <h3 class="text-xl font-bold text-white mb-3 group-hover:text-brand-cyan transition-colors leading-snug">
+                            <a href="${postLink}" class="focus:outline-none before:absolute before:inset-0">${title}</a>
                         </h3>
-                        <p class="text-gray-400 text-sm mb-6 flex-grow leading-relaxed">${excerpt || ''}</p>
-                        <a href="${postLink}" class="inline-flex items-center text-brand-blue font-medium text-sm hover:text-white transition-colors mt-auto">
-                            Read Article <i class="fa-solid fa-arrow-right ml-2 text-xs"></i>
-                        </a>
+                        <p class="text-slate-400 text-sm mb-6 flex-grow leading-relaxed line-clamp-3">${excerpt || ''}</p>
+                        <div class="inline-flex items-center text-brand-cyan font-semibold text-sm transition-transform mt-auto group-hover:translate-x-1">
+                            Read Article <i class="fa-solid fa-arrow-right ml-2 text-[10px]"></i>
+                        </div>
                     </div>
                 </article>
                 `;
@@ -197,10 +355,9 @@
             const query = { content_type: CONTENT_TYPE, order: '-sys.createdAt' };
             if (category) query['fields.category'] = category;
 
-            container.innerHTML = `<div class="col-span-full text-center py-20 text-gray-500"><i class="fa-solid fa-circle-notch fa-spin text-3xl mb-4 text-brand-blue"></i><p>Fetching from Edge...</p></div>`;
+            container.innerHTML = `<div class="col-span-full text-center py-20 text-slate-500"><i class="fa-solid fa-circle-notch fa-spin text-4xl mb-4 text-brand-blue"></i><p class="text-lg font-medium">Fetching from Edge...</p></div>`;
 
             client.getEntries(query).then((response) => {
-                // IMPORTANT: Pass whole response to helper function for asset includes
                 if (response.items.length > 0) renderPosts(response.items);
                 else renderPosts(category ? MOCK_POSTS.filter(p => p.fields.category === category) : MOCK_POSTS);
             }).catch((error) => {
@@ -209,21 +366,22 @@
             });
         }
 
-        // Filters Logic
+        // --- FILTERS LOGIC ---
         const filterBtns = filtersContainer.querySelectorAll('.filter-btn');
         filterBtns.forEach(button => {
             button.addEventListener('click', () => {
                 const cat = button.dataset.category;
                 filterBtns.forEach(btn => {
-                    btn.classList.remove('bg-brand-blue', 'text-white');
-                    btn.classList.add('bg-brand-card', 'border-brand-border', 'text-gray-400');
+                    btn.classList.remove('bg-gradient-to-r', 'from-blue-600', 'to-cyan-500', 'text-white', 'shadow-[0_0_15px_rgba(0,102,255,0.3)]', 'transform', 'scale-105');
+                    btn.classList.add('bg-slate-800/80', 'border', 'border-slate-700', 'text-slate-300');
                 });
-                button.classList.add('bg-brand-blue', 'text-white');
-                button.classList.remove('bg-brand-card', 'border-brand-border', 'text-gray-400');
+                button.classList.add('bg-gradient-to-r', 'from-blue-600', 'to-cyan-500', 'text-white', 'shadow-[0_0_15px_rgba(0,102,255,0.3)]', 'transform', 'scale-105');
+                button.classList.remove('bg-slate-800/80', 'border', 'border-slate-700', 'text-slate-300');
                 fetchAndRenderPosts(cat || null);
             });
         });
 
+        // Initialize
         fetchAndRenderPosts(null);
     </script>
 </body>

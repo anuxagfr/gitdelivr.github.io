@@ -561,18 +561,51 @@ async function handleCdn(url) {
 
   return new Response(originRes.body, { status: 200, statusText: 'OK', headers });
 }
-
 function parseCdnSource(prefix, path) {
   if (prefix === 'npm') return parseNpmSource(path);
 
-  const [user, repoAndBranch, ...rest] = path.split('/');
-  if (!user || !repoAndBranch) throw new HttpError('Invalid CDN URL format.', 400);
+  const parts = path.split('/');
+  // Kam se kam 3 parts chahiye (user, repo, file)
+  if (parts.length < 3) {
+    throw new HttpError('Invalid CDN URL format. Use /gh/user/repo@branch/file or /gh/user/repo/branch/file', 400);
+  }
 
-  const { repo, branch } = splitRepoAndBranch(repoAndBranch);
-  const filePath = rest.join('/');
-  return { prefix, user, repoAndBranch, repo, branch, filePath, ext: extension(filePath) };
+  const user = parts[0];
+  let repo, branch, filePath;
+
+  // Case 1: Purana format (e.g., gitdelivr/demo@main/photo.jpg)
+  if (parts[1].includes('@')) {
+    const split = parts[1].split('@');
+    repo = split[0];
+    branch = split.slice(1).join('@') || CONFIG.cdn.defaultBranch;
+    filePath = parts.slice(2).join('/');
+  } 
+  // Case 2: Naya explicit format (e.g., gitdelivr/demo/main/photo.jpg)
+  else if (parts.length >= 4) {
+    repo = parts[1];
+    branch = parts[2];
+    filePath = parts.slice(3).join('/');
+  } 
+  // Case 3: Short fallback format agar branch mention na ho (e.g., gitdelivr/demo/photo.jpg)
+  else {
+    repo = parts[1];
+    branch = CONFIG.cdn.defaultBranch; // defaults to 'main'
+    filePath = parts.slice(2).join('/');
+  }
+
+  if (!filePath) {
+    throw new HttpError('Missing file path in CDN URL.', 400);
+  }
+
+  return {
+    prefix,
+    user,
+    repo,
+    branch,
+    filePath,
+    ext: extension(filePath),
+  };
 }
-
 function parseNpmSource(path) {
   const parts = path.split('/');
   let packageName;

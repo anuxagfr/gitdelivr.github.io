@@ -26,7 +26,7 @@
 
 ## 🚀 Usage
 
-Visit the live tool here: **[GitDelivr Generator](https://gitdelivr.github.io/cdn_generator.html)**
+Visit the live tool here: **[GitDelivr Generator](https://gitdelivr.github.io/cdn-generator.html)**
 
 ### Example Use Cases
 * **Developers:** Quickly test libraries or assets in CodePen, JSFiddle, or local environments.
@@ -70,6 +70,7 @@ Created with ♥ by **Anurag**
 
 * **Email:** [gitdelivr@gmail.com](mailto:gitdelivr@gmail.com)
 * **Instagram:** [@anuxagfr](https://instagram.com/anuxagfr)
+* **Telegram:** [@gitdelivr](https://t.me/gitdelivr)
 * **Portfolio:** [anuragfr.github.io](https://anuragfr.github.io)
 
 ## 📄 License

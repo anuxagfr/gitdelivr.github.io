@@ -1,4 +1,17 @@
 User-agent: *
-Allow: / 
-llms.txt
-Sitemap: https://gitdelivr.in/sitemap.xml
+Allow: /
+Allow: /status.json
+Allow: /favicon.png
+
+# Prevent search engines from crawling private/admin pages
+Disallow: /admin.html
+Disallow: /auth.html
+Disallow: /reset-password.html
+Disallow: /domo.html
+Disallow: /api/chat
+Disallow: /proxy
+Disallow: /cdn-cgi/
+
+# Point crawlers directly to the auto-generated sitemap
+Sitemap: https://gitdelivr.in/sitemap.XML
+Crawl-delay: 1

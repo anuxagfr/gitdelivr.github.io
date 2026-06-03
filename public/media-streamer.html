@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitDelivr - Free Video & Media Streamer</title>
+    
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://gitdelivr.in/media-streamer.html">
+    <meta property="og:title" content="GitDelivr - Free Video & Media Streamer">
+    <meta property="og:description" content="Generate fast, reliable GitDelivr CDN links for GitHub, GitLab, and Bitbucket files.">
+    <meta property="og:image" content="https://gitdelivr.in/assets/your-banner-image.png"> 
+    <meta name="description" content="Optimize and stream high-speed video directly from GitHub, Google Drive, and direct URLs without buffering. Generate embed codes instantly.">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="GitDelivr - Free Video & Media Streamer">
+    <meta name="twitter:description" content="Optimize and stream high-speed video directly from GitHub, Google Drive, and direct URLs without buffering.">
+    <meta name="twitter:image" content="https://gitdelivr.in/assets/your-banner-image.png">
+    <link rel="canonical" href="https://gitdelivr.in/media-streamer.html">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .hidden { display: none !important; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        .nav-active { background-color: #eff6ff; color: #2563eb; font-weight: 700; border-right: 4px solid #2563eb; }
+        .dark .nav-active { background-color: #1e3a8a; color: #60a5fa; border-color: #60a5fa; }
+        @media (min-width: 768px) {
+            .sidebar-collapsed { margin-left: -18rem !important; }
+        }
+    </style>
+    <link rel="stylesheet" href="ui-fixes.css">
+    <style>
+        /* Simple Toast Animation */
+        @keyframes toast-in { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes toast-out { from { opacity: 1; } to { opacity: 0; } }
+        .toast-in { animation: toast-in 0.3s ease-out forwards; }
+        .toast-out { animation: toast-out 0.3s ease-in forwards; }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-sans h-screen flex overflow-hidden transition-colors duration-300">
+
+    <div id="maintenanceOverlay" class="fixed inset-0 bg-slate-900/95 backdrop-blur-md z-[9999] hidden flex-col items-center justify-center text-center p-6">
+        <div class="bg-white dark:bg-slate-800 p-8 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-2xl max-w-md w-full flex flex-col items-center">
+            <div class="w-16 h-16 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center mb-6">
+                <svg class="w-8 h-8 text-yellow-600 dark:text-yellow-500 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-2">System Maintenance</h2>
+            <div id="maintenanceMessage" class="mt-6 grid grid-cols-4 gap-4 text-center hidden w-full">
+                <div class="bg-gray-50 dark:bg-slate-700 p-3 rounded-xl border border-gray-100 dark:border-slate-600">
+                    <span id="timerDays" class="block text-2xl font-bold text-blue-600 dark:text-blue-400">00</span>
+                    <span class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide">Days</span>
+                </div>
+                <div class="bg-gray-50 dark:bg-slate-700 p-3 rounded-xl border border-gray-100 dark:border-slate-600">
+                    <span id="timerHours" class="block text-2xl font-bold text-blue-600 dark:text-blue-400">00</span>
+                    <span class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide">Hours</span>
+                </div>
+                <div class="bg-gray-50 dark:bg-slate-700 p-3 rounded-xl border border-gray-100 dark:border-slate-600">
+                    <span id="timerMinutes" class="block text-2xl font-bold text-blue-600 dark:text-blue-400">00</span>
+                    <span class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide">Mins</span>
+                </div>
+                <div class="bg-gray-50 dark:bg-slate-700 p-3 rounded-xl border border-gray-100 dark:border-slate-600">
+                    <span id="timerSeconds" class="block text-2xl font-bold text-blue-600 dark:text-blue-400">00</span>
+                    <span class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide">Secs</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="mobileOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/50 z-40 hidden md:hidden"></div>
+
+    <aside id="sidebar" class="w-72 shrink-0 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col fixed md:relative z-50 h-full transform -translate-x-full md:translate-x-0 transition-all duration-300">
+        
+        <div class="h-16 flex items-center justify-between px-6 border-b border-slate-200 dark:border-slate-700 shrink-0">
+            <span class="text-xl font-extrabold tracking-tight text-blue-600 dark:text-blue-400">GitDelivr</span>
+            <button onclick="toggleSidebar()" class="md:hidden text-slate-500 hover:text-slate-800 dark:hover:text-white">✕</button>
+        </div>
+
+        <div class="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center space-x-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition" onclick="openLoginIfNotLoggedIn()">
+            <img id="sideAvatar" src="https://ui-avatars.com/api/?name=Guest&background=e2e8f0&color=64748b" class="w-10 h-10 rounded-full border border-slate-300 dark:border-slate-600 object-cover">
+            <div class="overflow-hidden">
+                <h3 id="sideName" class="font-bold text-sm truncate">Guest</h3>
+                <p id="sideEmail" class="text-xs text-slate-500 truncate">Click to Login</p>
+            </div>
+        </div>
+
+       <nav class="flex-1 overflow-y-auto py-4">
+            <ul class="space-y-1">
+                <li class="px-4 pb-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Main Tools</li>
+                <li>
+                    <a href="cdn-generator.html" class="w-full text-left px-6 py-2.5 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-700/50 transition flex items-center text-slate-600 dark:text-slate-300">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg> Link Generator
+                    </a>
+                </li>
+                <li>
+                    <button onclick="switchTab('tabRepos', this)" class="nav-btn w-full text-left px-6 py-2.5 text-sm font-medium transition flex items-center text-slate-600 dark:text-slate-300">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg> GitHub Repos
+                    </button>
+                </li>
+                <li>
+                    <button onclick="switchTab('tabHistory', this); loadHistory();" class="nav-btn w-full text-left px-6 py-2.5 text-sm font-medium transition flex items-center text-slate-600 dark:text-slate-300">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Link History
+                    </button>
+                </li>
+
+                <li class="px-4 pt-4 pb-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Media & Analysis</li>
+                <li>
+                    <a href="audio-streamer.html" class="w-full text-left px-6 py-2.5 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-700/50 transition flex items-center text-slate-600 dark:text-slate-300">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg> Audio Streamer
+                    </a>
+                </li>
+                <li>
+                    <button onclick="switchTab('tabMediaStreamer', this)" class="nav-btn nav-active w-full text-left px-6 py-2.5 text-sm font-medium transition flex items-center text-slate-900 dark:text-white">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Media Streamer
+                    </button>
+                </li>
+                <li>
+                    <a href="speed-tester.html" class="w-full text-left px-6 py-2.5 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-700/50 transition flex items-center text-slate-600 dark:text-slate-300">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> Speed Tester
+                    </a>
+                </li>
+                <li>
+                    <a href="site-analyzer.html" class="w-full text-left px-6 py-2.5 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-700/50 transition flex items-center text-slate-600 dark:text-slate-300">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg> Site Analyzer
+                    </a>
+                </li>
+
+                <li class="pt-4">
+                    <button onclick="toggleSettingsAccordion()" class="w-full text-left px-4 pb-2 flex justify-between items-center hover:opacity-80 transition group focus:outline-none">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest group-hover:text-blue-500 transition-colors">Configuration</span>
+                        <svg id="settingsChevron" class="w-4 h-4 text-slate-400 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    
+                    <ul id="settingsMenu" class="hidden space-y-1 mt-1 bg-slate-50/50 dark:bg-slate-900/30 py-2 border-y border-slate-100 dark:border-slate-700/50">
+                        <li>
+                            <button onclick="switchTab('tabSecurity', this)" class="nav-btn w-full text-left px-6 py-2 text-sm font-medium transition flex items-center text-slate-600 dark:text-slate-300">
+                                <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg> Password & Security
+                            </button>
+                        </li>
+                        <li>
+                            <button onclick="switchTab('tabNotifications', this)" class="nav-btn w-full text-left px-6 py-2 text-sm font-medium transition flex items-center text-slate-600 dark:text-slate-300">
+                                <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg> Notifications
+                            </button>
+                        </li>
+                        <li>
+                            <button onclick="switchTab('tabTheme', this)" class="nav-btn w-full text-left px-6 py-2 text-sm font-medium transition flex items-center text-slate-600 dark:text-slate-300">
+                                <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path></svg> Appearance
+                            </button>
+                        </li>
+                        <li>
+                            <button onclick="switchTab('tabContact', this)" class="nav-btn w-full text-left px-6 py-2 text-sm font-medium transition flex items-center text-slate-600 dark:text-slate-300">
+                                <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"></path></svg> Contact Support
+                            </button>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+
+            <div id="adSidebarContainer" class="px-6 py-4 mt-4 hidden rounded-xl transition-colors"></div>
+        </nav>
+        
+        <div class="p-4 border-t border-slate-200 dark:border-slate-700 shrink-0 flex justify-between items-center">
+            <button onclick="logout()" id="btnLogout" class="hidden text-sm font-bold text-red-600 hover:text-red-700 dark:hover:text-red-400 transition flex items-center px-3 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                Logout
+            </button>
+            
+            <div class="flex items-center space-x-4 ml-auto text-slate-400 dark:text-slate-500">
+                <a href="https://github.com/gitdelivr" target="_blank" aria-label="GitHub" class="hover:text-slate-900 dark:hover:text-white transform hover:scale-110 transition-all duration-200">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd" /></svg>
+                </a>
+                <a href="https://x.com/GitDelivr" target="_blank" aria-label="Twitter / X" class="text-slate-400 hover:text-white transform hover:scale-110 transition-all duration-300">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                </a>
+                <a href="https://instagram.com/gitdelivr.in" target="_blank" class="text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors">
+                    <span class="sr-only">Instagram</span>
+                    <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 011.772 1.153 4.902 4.902 0 011.153 1.772c.247.636.416 1.363.465 2.427.048 1.067.06 1.407.06 4.123v.08c0 2.643-.012 2.987-.06 4.043-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-1.153 1.772 4.902 4.902 0 01-1.772 1.153c-.636.247-1.363.416-2.427.465-1.067.048-1.407.06-4.123.06h-.08c-2.643 0-2.987-.012-4.043-.06-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-1.772-1.153 4.902 4.902 0 01-1.153-1.772c-.247-.636-.416-1.363-.465-2.427-.047-1.024-.06-1.379-.06-3.808v-.63c0-2.43.013-2.784.06-3.808.049-1.064.218-1.791.465-2.427a4.902 4.902 0 011.153-1.772A4.902 4.902 0 015.45 2.525c.636-.247 1.363-.416 2.427-.465C8.901 2.013 9.256 2 11.685 2h.63zm-.081 1.802h-.468c-2.456 0-2.784.011-3.807.058-.975.045-1.504.207-1.857.344-.467.182-.8.398-1.15.748-.35.35-.566.683-.748 1.15-.137.353-.3.882-.344 1.857-.047 1.023-.058 1.351-.058 3.807v.468c0 2.456.011 2.784.058 3.807.045.975.207 1.504.344 1.857.182.466.399.8.748 1.15.35.35.683.566 1.15.748.353.137.882.3 1.857.344 1.054.048 1.37.058 4.041.058h.08c2.597 0 2.917-.01 3.96-.058.976-.045 1.505-.207 1.858-.344.466-.182.8-.398 1.15-.748.35-.35.566-.683.748-1.15.137-.353.3-.882.344-1.857.048-1.055.058-1.37.058-4.041v-.08c0-2.597-.01-2.917-.058-3.96-.045-.976-.207-1.505-.344-1.858a3.097 3.097 0 00-.748-1.15 3.098 3.098 0 00-1.15-.748c-.353-.137-.882-.3-1.857-.344-1.023-.047-1.351-.058-3.807-.058zM12 6.865a5.135 5.135 0 110 10.27 5.135 5.135 0 010-10.27zm0 1.802a3.333 3.333 0 100 6.666 3.333 3.333 0 000-6.666zm5.338-3.205a1.2 1.2 0 110 2.4 1.2 1.2 0 010-2.4z" clip-rule="evenodd" /></svg>
+                </a>
+                <a href="https://t.me/gitdelivr" target="_blank" aria-label="Telegram" class="text-slate-400 hover:text-blue-500 transform hover:scale-110 transition-all duration-300">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.665 3.717l-17.73 6.837c-1.21.486-1.203 1.161-.222 1.462l4.552 1.42 10.532-6.645c.498-.303.953-.14.579.192l-8.533 7.701h-.002l.002.014-.314 4.692c.46 0 .663-.211.921-.46l2.211-2.15 4.599 3.397c.848.467 1.457.227 1.668-.785l3.019-14.228c.309-1.239-.473-1.8-1.282-1.447z"/></svg>
+                </a>
+            </div>
+        </div>
+    </aside>
+
+    <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
+        
+        <header class="h-16 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-4 sm:px-8 shrink-0 z-30">
+            <div class="flex items-center">
+                <button onclick="toggleSidebar()" title="Toggle Sidebar" class="mr-4 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white transition-colors focus:outline-none">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
+                <h1 id="pageTitle" class="text-lg font-bold text-slate-800 dark:text-white">Media Streamer</h1>
+            </div>
+
+            <div class="hidden md:flex space-x-6 items-center mx-4">
+                <a href="https://gitdelivr.in/cdn-generator.html" class="text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition text-sm">CDN Tool</a>
+                
+                <!-- Tools Dropdown -->
+                <div class="relative group">
+                    <button class="flex items-center text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition text-sm py-2 focus:outline-none">
+                        Tools
+                        <svg class="w-4 h-4 ml-1 text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+
+                    <!-- Dropdown Menu items -->
+                    <div class="absolute left-0 mt-2 w-56 rounded-xl shadow-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 z-50">
+                        <div class="p-2 space-y-1">
+                            <a href="media-streamer.html" class="flex items-center px-3 py-2.5 rounded-lg text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 transition">
+                                <span class="mr-3 text-lg"></span> Media Streamer
+                            </a>
+                            <a href="audio-streamer.html" class="flex items-center px-3 py-2.5 rounded-lg text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 transition">
+                                <span class="mr-3 text-lg"></span> Audio Streamer
+                            </a>
+                            <a href="site-analyzer.html" class="flex items-center px-3 py-2.5 rounded-lg text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 transition">
+                                <span class="mr-3 text-lg"></span> Site Analyzer
+                            </a>
+                            <a href="speed-tester.html" class="flex items-center px-3 py-2.5 rounded-lg text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 transition">
+                                <span class="mr-3 text-lg"></span> Speed Tester
+                            </a>
+                            <a href="npm-setup.html" class="flex items-center px-3 py-2.5 rounded-lg text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 transition">
+                                <span class="mr-3 text-lg"></span> NPM Guide
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <a href="index.html#features" class="text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition text-sm">Features</a>
+                <a href="index.html#how-it-works" class="text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition text-sm">How It Works</a>
+                <a href="index.html#faq" class="text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition text-sm">FAQ</a>
+                <a href="index.html#contact" class="text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition text-sm">Contact</a>
+                <a href="blog/index.html" class="text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition text-sm">Blog</a>
+            </div>
+
+            <div class="flex items-center space-x-2">
+                <button id="topLoginBtn" onclick="openModal('loginModal')" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-bold shadow-md transition">
+                    Login
+                </button>
+                
+                <div id="topProfileSection" class="hidden flex items-center gap-2">
+                    
+                    <button id="btnTopLinkGithub" class="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd" /></svg>
+                        <span class="hidden sm:inline">Connect GitHub</span>
+                    </button>
+
+                    <div class="relative">
+                        <button id="notificationBtn" class="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition relative">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                            <span id="notificationBadge" class="absolute top-1 right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full hidden">0</span>
+                        </button>
+                        <div id="notificationDropdown" class="hidden absolute right-0 mt-2 w-80 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-50 overflow-hidden animate-dropdown-fade origin-top-right">
+                            <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
+                                <h3 class="font-bold text-sm text-slate-800 dark:text-white">Notifications</h3>
+                                <button onclick="markAllRead()" class="text-xs text-blue-600 hover:underline">Mark all read</button>
+                            </div>
+                            <div class="p-2 border-b border-slate-100 dark:border-slate-700">
+                                <input type="text" id="searchNotifications" placeholder="Search..." class="w-full bg-slate-100 dark:bg-slate-900 text-sm rounded-md px-2 py-1.5 border border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div id="notificationList" class="max-h-64 overflow-y-auto">
+                                <p class="text-center text-slate-500 text-xs py-4">No notifications</p>
+                            </div>
+                            <div class="px-4 py-2 border-t border-slate-100 dark:border-slate-700 text-center bg-slate-50 dark:bg-slate-900/50">
+                                <button onclick="switchTab('tabNotifications', document.querySelectorAll('.nav-btn')[4]); toggleDropdown('notificationDropdown');" class="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">View All Notifications</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="relative">
+                        <button onclick="toggleDropdown('profileDropdown')" class="flex items-center gap-2 focus:outline-none hover:opacity-80 transition">
+                            <img id="topAvatar" src="https://ui-avatars.com/api/?name=User" class="w-8 h-8 rounded-full border border-blue-500 object-cover shadow-sm">
+                        </button>
+                        <div id="profileDropdown" class="hidden absolute right-0 mt-3 w-56 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-50 py-2">
+                            <div class="px-4 py-2 border-b border-slate-100 dark:border-slate-700">
+                                <p id="dropName" class="font-bold text-sm text-slate-900 dark:text-white truncate">User Name</p>
+                                <p id="dropEmail" class="text-xs text-slate-500 truncate">user@email.com</p>
+                            </div>
+                            <a href="index.html" class="block w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">Go to Home </a>
+                            <button onclick="switchTab('tabSecurity', document.querySelectorAll('.nav-btn')[3]); toggleDropdown('profileDropdown');" class="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">Settings</button>
+                            <button onclick="logout()" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">Logout</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-y-auto p-4 sm:p-8 relative pb-24 flex flex-col">
+            <div class="max-w-4xl mx-auto w-full flex-1 mt-6">
+                
+                <!-- Main Control Card -->
+                <div class="bg-white dark:bg-slate-800 shadow-xl rounded-2xl p-6 md:p-8 mb-8 border border-slate-200 dark:border-slate-700">
+                    <h2 class="text-xl font-bold mb-2 text-slate-800 dark:text-white">Media Streamer & Optimizer</h2>
+                    <p class="text-sm text-slate-500 mb-6">High-speed video streaming directly from GitHub, YouTube, Google Drive, or direct links.</p>
+
+                    <!-- Source Type Selector -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wide">Source Type</label>
+                        <input type="hidden" id="sourceType" value="github">
+                        
+                        <div class="flex flex-wrap gap-2 p-1.5 bg-slate-100/50 dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-inner">
+                            <button type="button" onclick="setSourceType('github')" id="btn-source-github" class="flex-1 flex items-center justify-center py-2.5 px-4 rounded-xl text-sm font-bold transition-all shadow-md bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 border border-slate-200 dark:border-slate-600">
+                                <svg class="w-5 h-5 sm:mr-2" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd" /></svg>
+                                <span class="hidden sm:inline">GitHub</span>
+                            </button>
+                            <button type="button" onclick="setSourceType('youtube')" id="btn-source-youtube" class="flex-1 flex items-center justify-center py-2.5 px-4 rounded-xl text-sm font-medium transition-all text-slate-500 hover:text-slate-700 dark:text-slate-400 border border-transparent hover:bg-slate-200/50 dark:hover:bg-slate-800">
+                                <svg class="w-5 h-5 sm:mr-2" fill="currentColor" viewBox="0 0 24 24"><path d="M21.582 6.186a2.685 2.685 0 00-1.884-1.894C17.983 3.843 12 3.843 12 3.843s-5.983 0-7.698.449a2.685 2.685 0 00-1.884 1.894C1.968 7.893 1.968 12 1.968 12s0 4.107.45 5.814a2.685 2.685 0 001.884 1.894C5.983 20.157 12 20.157 12 20.157s5.983 0 7.698-.449a2.685 2.685 0 001.884-1.894C22.032 16.107 22.032 12 22.032 12s0-4.107-.45-5.814zM9.932 15.421V8.579L15.932 12l-6 3.421z"/></svg>
+                                <span class="hidden sm:inline">YouTube</span>
+                            </button>
+                            <button type="button" onclick="setSourceType('drive')" id="btn-source-drive" class="flex-1 flex items-center justify-center py-2.5 px-4 rounded-xl text-sm font-medium transition-all text-slate-500 hover:text-slate-700 dark:text-slate-400 border border-transparent hover:bg-slate-200/50 dark:hover:bg-slate-800">
+                                <svg class="w-5 h-5 sm:mr-2" fill="currentColor" viewBox="0 0 24 24"><path d="M7.71 3.5L1.15 15l3.43 6l6.55-11.5M9.73 3.5h6.56L22.85 15H16.3M3.46 21h13.11l3.28-5.67H6.74"/></svg>
+                                <span class="hidden sm:inline">Google Drive</span>
+                            </button>
+                            <button type="button" onclick="setSourceType('direct')" id="btn-source-direct" class="flex-1 flex items-center justify-center py-2.5 px-4 rounded-xl text-sm font-medium transition-all text-slate-500 hover:text-slate-700 dark:text-slate-400 border border-transparent hover:bg-slate-200/50 dark:hover:bg-slate-800">
+                                <svg class="w-5 h-5 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                                <span class="hidden sm:inline">Direct Link</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- URL Input and Button -->
+                    <label id="urlLabel" class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wide">Media URL</label>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <input type="text" id="mediaUrl" class="w-full p-4 border border-slate-200 dark:border-slate-700 rounded-2xl bg-white dark:bg-slate-900 text-slate-800 dark:text-white outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm shadow-sm hover:shadow-md" placeholder="e.g., https://github.com/user/repo/blob/main/video.mp4">
+                        <button id="generateBtn" onclick="generateStreamLink()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-8 rounded-2xl shadow-lg shadow-blue-500/40 hover:shadow-xl hover:shadow-blue-500/50 hover:-translate-y-1 transition-all flex items-center justify-center whitespace-nowrap disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none">
+                            <svg id="generateSpinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span id="generateBtnText">Generate Link</span>
+                        </button>
+                    </div>
+                    <p id="errorMsg" class="text-red-500 dark:text-red-400 text-sm mt-4 hidden font-medium flex items-center gap-2 bg-red-500/10 backdrop-blur-md border border-red-500/20 p-3 rounded-lg w-max">
+                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> <span id="errorText"></span>
+                    </p>
+                </div>
+
+                <!-- Result & Settings Section -->
+                <div id="resultSection" class="hidden bg-white dark:bg-slate-800 shadow-xl rounded-2xl p-6 md:p-8 border border-slate-200 dark:border-slate-700 mb-12">
+                    <h3 class="text-xl font-bold mb-6 flex items-center text-slate-900 dark:text-white">
+                        <span class="w-8 h-8 bg-green-100 text-green-600 rounded-lg flex items-center justify-center mr-3 text-lg">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </span>
+                        Stream Ready
+                    </h3>
+
+                    <!-- Video / Iframe Preview Container -->
+                    <div class="flex justify-center w-full mb-8">
+                        <div id="videoContainer" class="w-full max-w-4xl bg-slate-100 dark:bg-slate-900 p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-inner flex flex-col items-center justify-center gap-4">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Settings Panel -->
+                    <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-5 mb-8 border border-slate-200 dark:border-slate-700">
+                        <h4 class="text-sm font-bold text-slate-800 dark:text-white mb-4 uppercase tracking-wider flex items-center gap-2">
+                            <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg> 
+                            Player Settings
+                        </h4>
+                        <div class="flex flex-wrap gap-6">
+                            <label class="relative inline-flex items-center cursor-pointer group">
+                                <input type="checkbox" id="autoplayToggle" class="sr-only peer" onchange="handleAutoplayChange()">
+                                <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                                <span class="ml-3 text-sm font-medium text-slate-700 dark:text-slate-300">Autoplay</span>
+                            </label>
+                            <label class="relative inline-flex items-center cursor-pointer group">
+                                <input type="checkbox" id="mutedToggle" class="sr-only peer" onchange="updateEmbedCode()">
+                                <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                                <span class="ml-3 text-sm font-medium text-slate-700 dark:text-slate-300">Muted</span>
+                            </label>
+                            <label class="relative inline-flex items-center cursor-pointer group">
+                                <input type="checkbox" id="loopToggle" class="sr-only peer" onchange="updateEmbedCode()">
+                                <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                                <span class="ml-3 text-sm font-medium text-slate-700 dark:text-slate-300">Loop</span>
+                            </label>
+                            
+                            <!-- Proxy Label -->
+                            <label id="proxyLabel" class="relative inline-flex items-center cursor-pointer group">
+                                <input type="checkbox" id="proxyToggle" class="sr-only peer" onchange="if(document.getElementById('cdnLink').value) generateStreamLink();">
+                                <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                                <span class="ml-3 text-sm font-medium text-slate-700 dark:text-slate-300">Use GitDelivr Proxy</span>
+                            </label>
+                            <label class="relative inline-flex items-center cursor-pointer group">
+                                <input type="checkbox" id="allowDownloadToggle" class="sr-only peer" onchange="updateEmbedCode()" checked>
+                                <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                                <span class="ml-3 text-sm font-medium text-slate-700 dark:text-slate-300">Allow Download</span>
+                            </label>
+                            <label class="relative inline-flex items-center cursor-pointer group" title="SRI ensures your website loads exactly the file we serve, preventing unauthorized modifications.">
+                                <input type="checkbox" id="sriToggle" class="sr-only peer" onchange="updateEmbedCode()">
+                                <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-500"></div>
+                                <span class="ml-3 text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1">Include SRI Hash <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Generated Links -->
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Direct Source Link</label>
+                            <div class="flex shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+                                <input type="text" id="cdnLink" readonly class="flex-grow p-4 border border-slate-200 dark:border-slate-700 rounded-l-2xl bg-slate-50/50 dark:bg-slate-900/50 text-sm text-slate-600 dark:text-slate-300 truncate outline-none focus:bg-white dark:focus:bg-slate-900">
+                                <button onclick="copyStreamerClipboard('cdnLink')" class="bg-slate-200 dark:bg-slate-700 p-4 rounded-r-2xl hover:bg-slate-300 dark:hover:bg-slate-600 transition flex items-center justify-center text-slate-600 dark:text-slate-300 border-y border-r border-slate-200 dark:border-slate-700" title="Copy Link">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="sriHashBlock" class="hidden">
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">SRI Hash</label>
+                            <div class="flex shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+                                <input type="text" id="sriHashDisplay" value="Generating..." readonly class="flex-grow min-w-0 p-4 border border-slate-200 dark:border-slate-700 rounded-l-2xl bg-slate-50/50 dark:bg-slate-900/50 text-sm font-mono text-slate-600 dark:text-slate-300 truncate outline-none focus:bg-white dark:focus:bg-slate-900">
+                                <button onclick="copyStreamerSriHash()" class="bg-slate-200 dark:bg-slate-700 p-4 rounded-r-2xl hover:bg-slate-300 dark:hover:bg-slate-600 transition flex items-center justify-center text-slate-600 dark:text-slate-300 border-y border-r border-slate-200 dark:border-slate-700" title="Copy SRI Hash">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Embed Code</label>
+                            <div class="flex shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+                                <input type="text" id="embedCode" readonly class="flex-grow p-4 border border-slate-200 dark:border-slate-700 rounded-l-2xl bg-slate-50/50 dark:bg-slate-900/50 text-sm text-blue-600 dark:text-blue-400 font-mono truncate outline-none focus:bg-white dark:focus:bg-slate-900">
+                                <button onclick="copyStreamerClipboard('embedCode')" class="bg-slate-200 dark:bg-slate-700 p-4 rounded-r-2xl hover:bg-slate-300 dark:hover:bg-slate-600 transition flex items-center justify-center text-slate-600 dark:text-slate-300 border-y border-r border-slate-200 dark:border-slate-700" title="Copy HTML">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Iframe Embed Code (For Blogs & Sites)</label>
+                            <div class="flex shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+                                <input type="text" id="iframeCode" readonly class="flex-grow p-4 border border-slate-200 dark:border-slate-700 rounded-l-2xl bg-slate-50/50 dark:bg-slate-900/50 text-sm text-purple-600 dark:text-purple-400 font-mono truncate outline-none focus:bg-white dark:focus:bg-slate-900">
+                                <button onclick="copyStreamerClipboard('iframeCode')" class="bg-slate-200 dark:bg-slate-700 p-4 rounded-r-2xl hover:bg-slate-300 dark:hover:bg-slate-600 transition flex items-center justify-center text-slate-600 dark:text-slate-300 border-y border-r border-slate-200 dark:border-slate-700" title="Copy Iframe HTML">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                </button>
+                            </div>
+                        </div>
+                    
+                    </div>
+                </div>
+
+                <div id="tabRepos" class="tab-content hidden">
+                    <div class="bg-white dark:bg-slate-800 shadow-xl rounded-2xl p-6 md:p-8 border border-slate-200 dark:border-slate-700">
+                        <h2 class="text-xl font-bold mb-2">Your GitHub Repositories</h2>
+                        <p class="text-sm text-slate-500 mb-6">Connect your account to see your repos, or click one to auto-fill the generator.</p>
+                        
+                        <div id="githubConnectOption" class="hidden bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-6 rounded-2xl text-center mb-6">
+                            <p class="mb-4 text-sm font-medium">Connect GitHub to view your repositories automatically.</p>
+                            <button class="bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-6 py-2 rounded-lg font-bold text-sm">Login with GitHub</button>
+                        </div>
+                        <div id="repoList" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <p class="text-slate-500 text-sm">Login with GitHub to see your repos here.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tabHistory" class="tab-content hidden">
+                    <div class="bg-white dark:bg-slate-800 shadow-xl rounded-2xl p-6 md:p-8 border border-slate-200 dark:border-slate-700">
+                        <h2 class="text-xl font-bold mb-2">Your Link History</h2>
+                        <p class="text-sm text-slate-500 mb-6">Search and filter your previously generated links by type.</p>
+
+                        <div class="flex space-x-2 mb-4 overflow-x-auto pb-2 scrollbar-hide">
+                            <button onclick="filterHistoryByCategory('all', this)" class="history-filter-btn px-4 py-1.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 transition-colors shrink-0">All</button>
+                            <button onclick="filterHistoryByCategory('cdn', this)" class="history-filter-btn px-4 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 hover:bg-slate-200 transition-colors shrink-0">CDN Links</button>
+                            <button onclick="filterHistoryByCategory('audio', this)" class="history-filter-btn px-4 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 hover:bg-slate-200 transition-colors shrink-0">Audio Stream</button>
+                            <button onclick="filterHistoryByCategory('media', this)" class="history-filter-btn px-4 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 hover:bg-slate-200 transition-colors shrink-0">Media Stream</button>
+                        </div>
+
+                        <div class="relative mb-6">
+                            <svg class="w-5 h-5 absolute left-3 top-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                            <input type="text" id="filterHistory" onkeyup="applyHistoryFilters()" placeholder="Search history items..." class="w-full pl-10 p-3 border border-slate-200 dark:border-slate-600 rounded-xl dark:bg-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 text-sm">
+                        </div>
+
+                        <div id="historyList" class="space-y-3">
+                            <p class="text-slate-500 text-sm hidden empty-state">No history found for this category.</p>
+                            
+                            <div class="history-item p-4 border rounded-xl dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex justify-between items-center transition" data-type="cdn">
+                                <div>
+                                    <p class="text-sm font-bold text-slate-800 dark:text-white">gitdelivr / assets / main.js</p>
+                                    <p class="text-xs text-slate-500 flex items-center gap-2 mt-1">
+                                        <span>Generated 2 days ago</span> 
+                                        <span class="px-2 py-0.5 bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 rounded text-[10px] font-bold">CDN</span>
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div class="history-item p-4 border rounded-xl dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex justify-between items-center transition" data-type="audio">
+                                <div>
+                                    <p class="text-sm font-bold text-slate-800 dark:text-white">podcast-episode-1.mp3</p>
+                                    <p class="text-xs text-slate-500 flex items-center gap-2 mt-1">
+                                        <span>Generated 3 days ago</span> 
+                                        <span class="px-2 py-0.5 bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400 rounded text-[10px] font-bold">Audio</span>
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="history-item p-4 border rounded-xl dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex justify-between items-center transition" data-type="media">
+                                <div>
+                                    <p class="text-sm font-bold text-slate-800 dark:text-white">tutorial-v2-1080p.mp4</p>
+                                    <p class="text-xs text-slate-500 flex items-center gap-2 mt-1">
+                                        <span>Generated 5 days ago</span> 
+                                        <span class="px-2 py-0.5 bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400 rounded text-[10px] font-bold">Media</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tabSecurity" class="tab-content hidden">
+                    <div class="bg-white dark:bg-slate-800 shadow-xl rounded-2xl p-6 md:p-8 border border-slate-200 dark:border-slate-700">
+                        <h2 class="text-xl font-bold mb-6">Security Settings</h2>
+                        <form onsubmit="event.preventDefault(); document.getElementById('btnChangePass').click();" class="max-w-md">
+                            <p class="text-sm text-slate-500 mb-4">Update your account password (only applies if logged in via Email).</p>
+                            <input type="password" id="newPassword" placeholder="Enter New Password" autocomplete="new-password" class="w-full p-3 mb-4 border rounded-xl dark:bg-slate-900 dark:border-slate-700 text-sm">
+                            <button type="submit" id="btnChangePass" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-md transition">Update Password</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div id="tabNotifications" class="tab-content hidden">
+                    <div class="bg-white dark:bg-slate-800 shadow-xl rounded-2xl p-6 md:p-8 border border-slate-200 dark:border-slate-700">
+                        <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+                            <h2 class="text-xl font-bold text-slate-900 dark:text-white">Notifications</h2>
+                            <div class="flex gap-3">
+                                <button id="markAllReadBtn" class="text-sm font-bold text-blue-600 dark:text-blue-400 hover:underline">Mark all read</button>
+                                <button id="deleteSelectedBtn" class="text-sm font-bold text-red-600 dark:text-red-400 hover:underline hidden">Delete Selected</button>
+                            </div>
+                        </div>
+                        <div class="flex items-center mb-4 px-1" id="bulkSelectContainer">
+                            <input type="checkbox" id="selectAllNotifs" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 cursor-pointer">
+                            <label for="selectAllNotifs" class="ml-2 text-sm font-medium text-slate-600 dark:text-slate-300 cursor-pointer select-none">Select All</label>
+                        </div>
+                        <div id="allNotificationsList" class="space-y-3">
+                            <p class="text-slate-500 text-center py-10">Loading notifications...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tabTheme" class="tab-content hidden">
+                    <div class="bg-white dark:bg-slate-800 shadow-xl rounded-2xl p-6 md:p-8 border border-slate-200 dark:border-slate-700">
+                        <h2 class="text-xl font-bold mb-6 text-slate-900 dark:text-white">Appearance</h2>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">Choose your preferred theme interface.</p>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <button onclick="setTheme('system')" id="btn-system" class="theme-selector p-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-blue-500 transition flex flex-col items-center gap-3 group">
+                                <div class="w-full h-24 bg-slate-100 dark:bg-slate-900 rounded-lg flex items-center justify-center relative overflow-hidden group-hover:shadow-md transition">
+                                    <div class="absolute inset-0 bg-gradient-to-br from-white to-slate-300 dark:from-slate-800 dark:to-black opacity-50"></div>
+                                    <svg class="w-8 h-8 text-slate-500 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                                </div>
+                                <span class="font-bold text-slate-700 dark:text-slate-300">System</span>
+                            </button>
+
+                            <button onclick="setTheme('light')" id="btn-light" class="theme-selector p-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-blue-500 transition flex flex-col items-center gap-3 group">
+                                <div class="w-full h-24 bg-white rounded-lg flex items-center justify-center border border-slate-200 shadow-sm group-hover:shadow-md transition">
+                                    <svg class="w-8 h-8 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                                </div>
+                                <span class="font-bold text-slate-700 dark:text-slate-300">Light</span>
+                            </button>
+
+                            <button onclick="setTheme('dark')" id="btn-dark" class="theme-selector p-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-blue-500 transition flex flex-col items-center gap-3 group">
+                                <div class="w-full h-24 bg-slate-900 rounded-lg flex items-center justify-center border border-slate-700 shadow-sm group-hover:shadow-md transition">
+                                    <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                                </div>
+                                <span class="font-bold text-slate-700 dark:text-slate-300">Dark</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tabContact" class="tab-content hidden">
+                    <div class="bg-white dark:bg-slate-800 shadow-xl rounded-2xl p-6 md:p-8 border border-slate-200 dark:border-slate-700">
+                        <h2 class="text-xl font-bold mb-6 text-slate-900 dark:text-white">Contact Support</h2>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">Having issues with the generator? Send us a message.</p>
+                        
+                        <form id="dashboardContactForm" class="space-y-4 max-w-lg">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Subject</label>
+                                <select id="contactSubject" class="w-full p-3 border border-slate-200 dark:border-slate-600 rounded-xl dark:bg-slate-700 dark:text-slate-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                                    <option>Bug Report</option>
+                                    <option>Feature Request</option>
+                                    <option>Account Issue</option>
+                                    <option>Other</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Message</label>
+                                <textarea id="contactMessage" rows="4" class="w-full p-3 border border-slate-200 dark:border-slate-600 rounded-xl dark:bg-slate-700 dark:text-slate-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none" placeholder="Describe your issue..."></textarea>
+                            </div>
+                            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-md transition">Send Message</button>
+                        </form>
+
+                        <div class="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
+                            <h3 class="font-bold text-sm text-slate-900 dark:text-white mb-3">Other ways to reach us</h3>
+                            <div class="flex flex-col space-y-2 text-sm text-slate-600 dark:text-slate-400">
+                                <a href="mailto:support@gitdelivr.in" class="flex items-center hover:text-blue-600 transition">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                                    support@gitdelivr.in
+                                </a>
+                                <a href="https://instagram.com/gitdelivr.in" target="_blank" class="flex items-center hover:text-pink-600 transition">
+                                    <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                                    @gitdelivr.in
+                                </a>
+                                <a href="https://github.com/gitdelivr/gitdelivr.github.io/issues" target="_blank" class="flex items-center hover:text-blue-600 transition">
+                                    <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                                    Open an Issue on GitHub
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <footer class="app-footer mt-12 pt-8 pb-4 border-t border-slate-200 dark:border-slate-700 w-full max-w-4xl mx-auto shrink-0 flex flex-col items-center px-4">
+                <nav class="flex flex-wrap justify-center gap-x-6 sm:gap-x-8 gap-y-4 mb-6 text-center" aria-label="Footer Navigation">
+                    <a href="index.html#features" class="text-sm font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-colors">Features</a>
+                    <a href="index.html#how-it-works" class="text-sm font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-colors">How It Works</a>
+                    <a href="index.html#faq" class="text-sm font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-colors">FAQ</a>
+                    <a href="index.html#contact" class="text-sm font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-colors">Contact</a>
+                </nav>
+                <p class="text-xs text-slate-400 dark:text-slate-500">&copy; 2026 GitDelivr.in. All rights reserved.</p>
+            </footer>
+
+        </main>
+
+        <div id="adBannerContainer" class="absolute bottom-0 w-full border-t border-slate-200 dark:border-slate-700 p-2 z-20 hidden transition-colors">
+            </div>
+
+        <div id="aiChatWidget" class="fixed bottom-5 right-5 z-[9990] flex flex-col items-end pointer-events-none sm:bottom-8 sm:right-8">
+            
+            <div id="chatWindow" class="hidden w-80 sm:w-96 bg-[#0B1121] border border-slate-700/50 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.5)] flex-col overflow-hidden mb-4 transition-all pointer-events-auto transform origin-bottom-right">
+                <div class="bg-[#151e32] p-4 border-b border-slate-700/50 flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-full bg-blue-600/20 text-blue-400 flex items-center justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-sm text-slate-200">GitDelivr Support</h3>
+                            <p class="text-[10px] text-emerald-400 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Online</p>
+                        </div>
+                    </div>
+                    <button id="closeChatBtn" class="text-slate-500 hover:text-slate-300 transition-colors p-1 focus:outline-none">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                
+                <div id="chatMessages" class="p-4 h-80 overflow-y-auto flex flex-col gap-3 bg-[#0B1121]">
+                    <div class="flex justify-start">
+                        <div class="bg-[#151e32] text-gray-300 text-sm p-3 rounded-2xl rounded-tl-sm border border-slate-700/50 max-w-[85%] shadow-sm leading-relaxed">
+                            Hi there! 👋 I'm the GitDelivr AI assistant. How can I help you today?
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-3 bg-[#151e32] border-t border-slate-700/50">
+                    <form id="chatForm" class="flex gap-2">
+                        <input type="text" id="chatInput" autocomplete="off" placeholder="Ask a question..." class="flex-1 bg-[#0B1121] border border-slate-700/50 text-sm text-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:border-blue-500 transition-colors placeholder-slate-500">
+                        <button type="submit" id="sendChatBtn" class="bg-blue-600 hover:bg-blue-500 text-white rounded-xl px-4 py-2 transition-colors flex items-center justify-center disabled:opacity-50 focus:outline-none">
+                            <svg class="w-4 h-4 transform rotate-45 -mt-1 -mr-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <button id="chatToggleBtn" class="w-14 h-14 bg-blue-600 hover:bg-blue-500 text-white rounded-full shadow-[0_8px_30px_rgb(37,99,235,0.4)] flex items-center justify-center transition-transform hover:scale-105 focus:outline-none pointer-events-auto">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+            </button>
+        </div>
+
+        <div id="toast-container" class="fixed bottom-5 right-5 z-[10000] flex flex-col gap-3 pointer-events-none sm:bottom-8 sm:right-8"></div>
+
+    </div>
+
+    <div id="loginModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm hidden z-[9999] flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 w-full max-w-md rounded-3xl shadow-2xl p-8 relative">
+            <div id="loginLoadingOverlay" class="absolute inset-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-3xl flex-col items-center justify-center hidden z-10">
+                <button onclick="if(typeof window.hideLoginLoading === 'function') window.hideLoginLoading(); else { this.parentElement.classList.add('hidden'); this.parentElement.classList.remove('flex'); this.parentElement.style.display='none'; }" class="absolute top-5 right-5 text-slate-400 hover:text-slate-800 dark:hover:text-white transition" title="Close Loading Screen">✕</button>
+                <svg class="animate-spin h-10 w-10 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p id="loginLoadingText" class="mt-4 text-lg font-semibold text-slate-700 dark:text-slate-200">Processing...</p>
+            </div>
+            <button onclick="closeModal('loginModal')" class="absolute top-5 right-5 text-slate-400 hover:text-slate-800 dark:hover:text-white transition">✕</button>
+            
+            <div id="loginView" class="text-center">
+                <h2 class="text-2xl font-bold mb-2">Welcome Back</h2>
+                <p class="text-sm text-slate-500 mb-6">Login to generate links and save history.</p>
+                
+                <button type="button" id="btnGithubLogin" class="w-full mb-3 flex items-center justify-center gap-3 bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-900 font-bold py-3 rounded-xl transition">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd" /></svg>
+                    Continue with GitHub
+                </button>
+                <button type="button" id="btnGoogleLogin" class="w-full mb-6 flex items-center justify-center gap-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 dark:bg-slate-700 dark:text-white font-bold py-3 rounded-xl transition">
+                    <svg class="w-5 h-5" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.223,0-9.65-3.657-11.303-8H6.306C9.656,39.663,16.318,44,24,44z"></path><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,5.238C39.99,36.506,44,30.836,44,24C44,22.659,43.862,21.35,43.611,20.083z"></path></svg>
+                    Continue with Google
+                </button>
+                
+                <div class="flex items-center my-4">
+                    <div class="flex-grow border-t dark:border-slate-700"></div>
+                    <span class="px-3 text-xs text-slate-400 uppercase">Or</span>
+                    <div class="flex-grow border-t dark:border-slate-700"></div>
+                </div>
+                
+                <form onsubmit="event.preventDefault();">
+                    <input type="email" id="authEmail" placeholder="Email" autocomplete="username" class="w-full p-3 mb-3 border rounded-xl dark:bg-slate-900 text-sm">
+                    <input type="password" id="authPass" placeholder="Password" autocomplete="current-password" class="w-full p-3 mb-2 border rounded-xl dark:bg-slate-900 text-sm">
+                    
+                    <div class="text-right mb-4">
+                        <button type="button" onclick="toggleView('forgotView')" class="text-xs text-blue-600 hover:underline font-bold">Forgot Password?</button>
+                    </div>
+                    
+                    <button type="submit" id="btnEmailLogin" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition">Login</button>
+                </form>
+                
+                <div id="unverifiedAlert" class="hidden mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-center transition-all">
+                    <p class="text-sm text-red-600 dark:text-red-400 mb-3 font-medium">Please verify your email before logging in.</p>
+                    <button id="btnResendVerification" class="w-full text-sm bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-lg transition shadow-sm">Resend Verification Email</button>
+                </div>
+
+                <p class="text-sm text-slate-500 mt-4">New here? <button type="button" onclick="toggleView('signupView')" class="text-blue-600 font-bold hover:underline">Create Account</button></p>
+            </div>
+
+            <div id="forgotView" class="text-center hidden">
+                <h2 class="text-2xl font-bold mb-2">Reset Password</h2>
+                <p class="text-sm text-slate-500 mb-6">Enter your email to receive a password reset link.</p>
+                
+                <input type="email" id="resetEmail" placeholder="Your Email" class="w-full p-3 mb-4 border rounded-xl dark:bg-slate-900 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all disabled:opacity-50">
+                
+                <div id="forgotStatusMessage" class="hidden rounded-lg p-3 text-sm font-medium border mb-4 text-left transition-all duration-300"></div>
+
+                <button id="btnResetPass" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl mb-4 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed">
+                    <svg id="forgotSpinner" class="animate-spin hidden h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span id="forgotBtnText">Send Reset Link</span>
+                </button>
+                <p class="text-sm text-slate-500 mt-2">Remembered it? <button type="button" onclick="toggleView('loginView')" class="text-blue-600 font-bold hover:underline">Back to Login</button></p>
+            </div>
+
+            <div id="signupView" class="text-center hidden">
+                <h2 class="text-2xl font-bold mb-2">Create Account</h2>
+                <p class="text-sm text-slate-500 mb-6">Join us to save your generated links.</p>
+                
+                <form onsubmit="event.preventDefault();">
+                    <input type="text" id="signupName" placeholder="Full Name" autocomplete="name" class="w-full p-3 mb-3 border rounded-xl dark:bg-slate-900 text-sm">
+                    <input type="email" id="signupEmail" placeholder="Email" autocomplete="username" class="w-full p-3 mb-3 border rounded-xl dark:bg-slate-900 text-sm">
+                    <input type="password" id="signupPass" placeholder="Password (6+ chars)" autocomplete="new-password" class="w-full p-3 mb-4 border rounded-xl dark:bg-slate-900 text-sm">
+                    
+                    <button type="submit" id="btnEmailSignup" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl mb-4 transition">Sign Up</button>
+                </form>
+                <p class="text-sm text-slate-500 mt-2">Already have an account? <button type="button" onclick="toggleView('loginView')" class="text-blue-600 font-bold hover:underline">Login</button></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script>// Store base states globally
+// Store base states globally
+      // Store base states globally
+        window.currentBaseUrl = "";
+        window.currentSourceType = "github";
+        window.currentYouTubeId = null;
+        window.currentAudioHash = ""; // Added to store the generated SRI hash
+
+        function setSourceType(type) {
+            document.getElementById('sourceType').value = type;
+            window.currentSourceType = type;
+            
+            const buttons = ['github', 'youtube', 'drive', 'direct'];
+            buttons.forEach(btn => {
+                const el = document.getElementById('btn-source-' + btn);
+                if (btn === type) {
+                    el.className = "flex-1 flex items-center justify-center py-2.5 px-4 rounded-xl text-sm font-bold transition-all shadow-md bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 border border-slate-200 dark:border-slate-600";
+                } else {
+                    el.className = "flex-1 flex items-center justify-center py-2.5 px-4 rounded-xl text-sm font-medium transition-all text-slate-500 hover:text-slate-700 dark:text-slate-400 border border-transparent hover:bg-slate-200/50 dark:hover:bg-slate-800";
+                }
+            });
+
+            // Logic for Auto-Toggling Proxy
+            const proxyToggle = document.getElementById('proxyToggle');
+            const proxyLabel = document.getElementById('proxyLabel');
+            
+            if (type === 'drive') {
+                proxyLabel.classList.remove('hidden');
+                proxyToggle.checked = true; // Auto-Enable for Google Drive
+            } else if (type === 'youtube') {
+                proxyLabel.classList.add('hidden');
+                proxyToggle.checked = false; // Hide and Disable for YouTube
+            } else {
+                proxyLabel.classList.remove('hidden');
+                proxyToggle.checked = false; // Show but don't force for GitHub/Direct
+            }
+
+            updatePlaceholder();
+        }
+
+        function updatePlaceholder() {
+            const type = document.getElementById('sourceType').value;
+            const input = document.getElementById('mediaUrl');
+            const label = document.getElementById('urlLabel');
+            if(type === 'github') {
+                label.textContent = 'GitHub Video URL';
+                input.placeholder = 'e.g., https://github.com/user/repo/blob/main/video.mp4';
+            } else if(type === 'youtube') {
+                label.textContent = 'YouTube Video URL';
+                input.placeholder = 'e.g., https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+            } else if(type === 'drive') {
+                label.textContent = 'Google Drive Share Link';
+                input.placeholder = 'e.g., https://drive.google.com/file/d/1aBcD.../view';
+            } else {
+                label.textContent = 'Direct Video URL';
+                input.placeholder = 'e.g., https://www.w3schools.com/html/mov_bbb.mp4';
+            }
+        }
+
+        function getUniversalLink(url, sourceType) {
+            let cdnUrl = "";
+            let videoId = null;
+
+            if (sourceType === 'github') {
+                const regex = /^https?:\/\/github\.com\/([^\/]+)\/([^\/]+)\/(?:blob|raw|tree)\/([^\/]+)\/(.+)$/i;
+                const match = url.match(regex);
+                if (!match) return { error: "Invalid GitHub URL. Ensure it links directly to a file." };
+                cdnUrl = `https://cdn.gitdelivr.in/gh/${match[1]}/${match[2]}@${match[3]}/${match[4]}`;
+            
+            } else if (sourceType === 'youtube') {
+                const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
+                const match = url.match(regex);
+                if (!match) return { error: "Invalid YouTube URL." };
+                videoId = match[1];
+                cdnUrl = `https://www.youtube.com/embed/${videoId}`;
+            
+            } else if (sourceType === 'drive') {
+                const regex = /(?:d\/|id=)([\w-]{25,})/;
+                const match = url.match(regex);
+                if (!match) return { error: "Invalid Drive Link. Could not extract File ID." };
+                cdnUrl = `https://drive.google.com/uc?export=download&id=${match[1]}&confirm=t`;
+            
+            } else if (sourceType === 'direct') {
+                cdnUrl = url;
+            }
+            return { url: cdnUrl, videoId: videoId };
+        }
+
+        function generateStreamLink() {
+            const generateBtn = document.getElementById('generateBtn');
+            const generateSpinner = document.getElementById('generateSpinner');
+            const generateBtnText = document.getElementById('generateBtnText');
+            
+            if (generateBtn) generateBtn.disabled = true;
+            if (generateSpinner) generateSpinner.classList.remove('hidden');
+            if (generateBtnText) generateBtnText.textContent = 'Generating...';
+
+            setTimeout(() => {
+                window.currentAudioHash = ""; // Reset Hash on new link generation
+
+                const urlInputEl = document.getElementById('mediaUrl');
+                const urlInput = urlInputEl.value.trim();
+                const errorContainer = document.getElementById('errorMsg');
+                const errorText = errorContainer.querySelector('span');
+                const resultSection = document.getElementById('resultSection');
+                const sourceType = document.getElementById('sourceType').value;
+
+                const restoreBtnState = () => {
+                    if (generateBtn) generateBtn.disabled = false;
+                    if (generateSpinner) generateSpinner.classList.add('hidden');
+                    if (generateBtnText) generateBtnText.textContent = 'Generate Link';
+                };
+
+                urlInputEl.classList.remove('animate-shake', 'border-red-500', 'dark:border-red-500');
+
+                if (!urlInput) {
+                    errorContainer.classList.add('hidden');
+                    restoreBtnState();
+                    return;
+                }
+
+                // We do NOT pass useProxy here anymore. Base URL is always raw/pure.
+                const linkData = getUniversalLink(urlInput, sourceType);
+                
+                if (linkData.error) {
+                    errorText.textContent = linkData.error;
+                    errorContainer.classList.remove('hidden');
+                    urlInputEl.classList.add('animate-shake', 'border-red-500', 'dark:border-red-500');
+                    setTimeout(() => urlInputEl.classList.remove('animate-shake', 'border-red-500', 'dark:border-red-500'), 500);
+                    resultSection.classList.add('hidden');
+                    restoreBtnState();
+                    return;
+                }
+                
+                errorContainer.classList.add('hidden');
+                
+                // Set base URL state globally
+                window.currentBaseUrl = linkData.url;
+                window.currentSourceType = sourceType;
+                window.currentYouTubeId = linkData.videoId;
+
+                // START SRI COMPUTATION LOGIC (Hidden for YouTube)
+                const sriToggle = document.getElementById('sriToggle');
+                const sriDisplay = document.getElementById('sriHashDisplay');
+                const sriBlock = document.getElementById('sriHashBlock');
+                
+                if (sriToggle) {
+                if (sourceType === 'youtube') {
+                    sriToggle.parentElement.classList.add('hidden');
+                    if (sriDisplay) sriDisplay.classList.add('hidden');
+                    if (sriBlock) sriBlock.classList.add('hidden');
+                } else {
+                    sriToggle.parentElement.classList.remove('hidden');
+                    sriToggle.disabled = true;
+                    if (sriBlock) sriBlock.classList.remove('hidden');
+                    if (sriDisplay) {
+                        sriDisplay.classList.remove('hidden');
+                        sriDisplay.value = 'Generating...';
+                        sriDisplay.classList.remove('text-red-500', 'dark:text-red-400');
+                        
+                        if (window.generateSRIHash) {
+                            window.generateSRIHash(linkData.url).then(res => {
+                                if (res && res.error) {
+                                    sriDisplay.value = res.error;
+                                    sriDisplay.classList.add('text-red-500', 'dark:text-red-400');
+                                } else {
+                                    window.currentAudioHash = res;
+                                    sriDisplay.value = res;
+                                    sriDisplay.classList.remove('text-red-500', 'dark:text-red-400');
+                                    sriToggle.disabled = false;
+                                    updateEmbedCode(); // Update again once hash is ready to inject into tags
+                                }
+                            }).catch(() => {
+                                sriDisplay.innerHTML = `<span class="text-red-500 font-medium">Failed to generate hash.</span>`;
+                            });
+                        } else {
+                            sriDisplay.innerHTML = `<span class="text-red-500 font-medium">SRI hash generator is unavailable.</span>`;
+                        }
+                    }
+                }
+            }
+
+            // Generate Output based on settings
+            updateEmbedCode();
+            resultSection.classList.remove('hidden');
+                restoreBtnState();
+            }, 400); // Short delay allows browser to render spinner
+        }
+
+        function handleAutoplayChange() {
+            const autoplayToggle = document.getElementById('autoplayToggle');
+            const mutedToggle = document.getElementById('mutedToggle');
+            if (autoplayToggle.checked) {
+                mutedToggle.checked = true; // Auto-mute if autoplay is selected (Browser policies)
+            }
+            updateEmbedCode();
+        }
+        
+        function updateEmbedCode() {
+            if (!window.currentBaseUrl) return;
+            
+            const sourceType = window.currentSourceType;
+            const useProxy = document.getElementById('proxyToggle')?.checked;
+            
+            const isAutoplay = document.getElementById('autoplayToggle')?.checked;
+            const isMuted = document.getElementById('mutedToggle')?.checked;
+            const isLoop = document.getElementById('loopToggle')?.checked;
+            const isSri = document.getElementById('sriToggle')?.checked;
+            const allowDownloadToggle = document.getElementById('allowDownloadToggle');
+            const allowDownload = allowDownloadToggle ? allowDownloadToggle.checked : true;
+            
+            let finalLink = window.currentBaseUrl;
+            
+            // Apply proxy dynamically when constructing the final output
+            if (sourceType === 'drive' || sourceType === 'direct') {
+                if (useProxy && !finalLink.includes('/proxy?url=')) {
+                    finalLink = `https://cdn.gitdelivr.in/proxy?url=${encodeURIComponent(finalLink)}`;
+                } else if (!useProxy && finalLink.includes('/proxy?url=')) {
+                    try {
+                        const urlParams = new URL(finalLink).searchParams;
+                        if(urlParams.has('url')) finalLink = decodeURIComponent(urlParams.get('url'));
+                    } catch(e) {}
+                }
+            }
+            
+            let iframeHtml = "";
+            let previewHtml = "";
+            let embedHtml = document.getElementById('embedCode');
+
+            // Build SRI Attribute string
+            let sriAttrStr = "";
+            if (isSri && window.currentAudioHash && sourceType !== 'youtube') {
+                sriAttrStr = ` integrity="${window.currentAudioHash}" crossorigin="anonymous"`;
+            }
+
+            if (sourceType === 'youtube') {
+                let ytUrl = new URL(finalLink);
+                ytUrl.searchParams.set('rel', '0'); 
+                if (isAutoplay) ytUrl.searchParams.set('autoplay', '1');
+                if (isMuted) ytUrl.searchParams.set('mute', '1');
+                if (isLoop) {
+                    ytUrl.searchParams.set('loop', '1');
+                    ytUrl.searchParams.set('playlist', window.currentYouTubeId);
+                }
+                
+                finalLink = ytUrl.toString();
+                iframeHtml = `<iframe width="100%" height="400" src="${finalLink}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);"></iframe>`;
+                previewHtml = iframeHtml;
+                if(embedHtml) embedHtml.value = iframeHtml;
+                
+            } else {
+                let attrs = [];
+                if (isAutoplay) attrs.push('autoplay');
+                if (isMuted) attrs.push('muted'); // This was proxyToggle before, fixed to isMuted
+                if (isLoop) attrs.push('loop');
+                const attrString = attrs.length > 0 ? ' ' + attrs.join(' ') : '';
+                
+                // Added SRI integration here (${sriAttrStr})
+                const rawPlayerHtml = `<style>body{margin:0;display:flex;align-items:center;justify-content:center;background:transparent;height:100vh;} .player-card{background:#f8fafc;padding:20px;border-radius:24px;box-shadow:0 4px 15px rgba(0,0,0,0.05);border:1px solid #e2e8f0;width:100%;max-width:800px;} video{width:100%;border-radius:12px;outline:none;}</style><div class="player-card"><video controls${attrString} preload="metadata"${sriAttrStr}><source src="${finalLink}"></video></div>`;
+                
+                iframeHtml = `<iframe srcdoc="${rawPlayerHtml.replace(/"/g, '&quot;')}" width="100%" height="400" style="border:none;" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
+                previewHtml = `<video id="videoPreview" controls${attrString} class="w-full aspect-video outline-none drop-shadow-md rounded-xl bg-black" playsinline preload="metadata"${sriAttrStr}><source src="${finalLink}">Browser not supported.</video>`;
+                if(embedHtml) embedHtml.value = `<video controls${attrString} preload="metadata"${sriAttrStr} style="width: 100%; border-radius: 8px;">\n  <source src="${finalLink}">\n</video>`;
+            }
+
+            document.getElementById('cdnLink').value = finalLink;
+            document.getElementById('iframeCode').value = iframeHtml;
+            
+            const videoContainer = document.getElementById('videoContainer');
+            if(videoContainer) videoContainer.innerHTML = previewHtml;
+
+            if (sourceType !== 'youtube') {
+                const videoPlayer = document.getElementById('videoPreview');
+                if (videoPlayer && videoPlayer.tagName === 'VIDEO') {
+                    if (isAutoplay && videoPlayer.paused) videoPlayer.play().catch(e => console.log("Autoplay prevented:", e));
+                    else if (!isAutoplay && !videoPlayer.paused) videoPlayer.pause();
+                }
+            }
+        }
+
+        function copyStreamerClipboard(elementId) {
+            const text = document.getElementById(elementId).value;
+            navigator.clipboard.writeText(text).then(() => {
+                alert("Copied successfully!");
+            });
+        }
+
+        function copyStreamerSriHash() {
+            const hash = window.currentAudioHash || document.getElementById('sriHashDisplay')?.value.trim();
+            if (!hash || !hash.startsWith('sha384-')) {
+                alert("SRI hash is not ready yet.");
+                return;
+            }
+            navigator.clipboard.writeText(hash).then(() => {
+                alert("SRI hash copied!");
+            });
+        }
+
+        function shareStreamLink(elementId) {
+            const url = document.getElementById(elementId).value;
+            if (!url) return;
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: 'GitDelivr Video Stream',
+                    text: 'Check out this video stream:',
+                    url: url
+                }).catch((error) => console.log('Error sharing:', error));
+            } else {
+                if (window.showToast) window.showToast("Sharing not supported on this browser.", "error");
+                else alert("Sharing not supported on this browser.");
+            }
+        }
+    </script>
+    <script type="module" src="script.js"></script>
+    
+    <script>
+        // Tab Switcher Logic
+        function switchTab(tabId, btnElement) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+            const target = document.getElementById(tabId);
+            if (target) target.classList.remove('hidden');
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('nav-active');
+            });
+            if(btnElement) btnElement.classList.add('nav-active');
+
+            const sidebar = document.getElementById('sidebar');
+            if(window.innerWidth < 768 && !sidebar.classList.contains('-translate-x-full')) {
+                toggleSidebar();
+            }
+        }
+
+        let currentHistoryType = 'all';
+
+        function filterHistoryByCategory(type, btnElement) {
+            currentHistoryType = type;
+            
+            document.querySelectorAll('.history-filter-btn').forEach(btn => {
+                btn.className = "history-filter-btn px-4 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 hover:bg-slate-200 transition-colors shrink-0";
+            });
+            btnElement.className = "history-filter-btn px-4 py-1.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 transition-colors shrink-0";
+            
+            applyHistoryFilters();
+        }
+
+        function applyHistoryFilters() {
+            const searchInput = document.getElementById('filterHistory');
+            if(!searchInput) return;
+            
+            const query = searchInput.value.toLowerCase();
+            const items = document.querySelectorAll('.history-item');
+            let visibleCount = 0;
+            
+            items.forEach(item => {
+                const textContent = item.textContent.toLowerCase();
+                const itemType = item.getAttribute('data-type');
+                
+                const matchesType = (currentHistoryType === 'all' || itemType === currentHistoryType);
+                const matchesText = textContent.includes(query);
+                
+                if (matchesType && matchesText) {
+                    item.style.display = '';
+                    visibleCount++;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            const emptyState = document.querySelector('#historyList .empty-state');
+            if (emptyState) {
+                emptyState.style.display = visibleCount === 0 ? 'block' : 'none';
+            }
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobileOverlay');
+            if(sidebar && overlay) {
+                if (window.innerWidth < 768) {
+                    sidebar.classList.toggle('-translate-x-full');
+                    overlay.classList.toggle('hidden');
+                } else {
+                    sidebar.classList.toggle('sidebar-collapsed');
+                }
+            }
+        }
+
+        function toggleSettingsAccordion() {
+            const menu = document.getElementById('settingsMenu');
+            const chevron = document.getElementById('settingsChevron');
+            if(menu && chevron) {
+                menu.classList.toggle('hidden');
+                chevron.classList.toggle('-rotate-180');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,3 +1,4 @@
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { 
     getAuth, signInWithPopup, GoogleAuthProvider, GithubAuthProvider, 
@@ -388,9 +389,28 @@ const generateSpecificLink = async (filePath) => {
     // HTML TAG LOGIC
     const ext = filePath.split('.').pop().toLowerCase();
     const fileName = filePath.split('/').pop();
+    const isScriptOrStyle = ext === "js" || ext === "css";
+    
+    let sriHash = "";
+    if (isScriptOrStyle && outputDiv) {
+        outputDiv.innerHTML = `<div class="flex justify-center p-4"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div><span class="ml-3 text-slate-500 flex items-center">Generating SRI Hash...</span></div>`;
+        try {
+            const res = await fetch(cdnUrl);
+            if (res.ok) {
+                const buffer = await res.arrayBuffer();
+                const hashBuffer = await crypto.subtle.digest('SHA-384', buffer);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                const hashBase64 = btoa(String.fromCharCode.apply(null, hashArray));
+                sriHash = `sha384-${hashBase64}`;
+            }
+        } catch(e) {
+            console.warn("SRI Hash generation failed:", e);
+        }
+    }
+
     let tagValue = "";
-    if (ext === "js") tagValue = `<script src="${cdnUrl}"><\/script>`;
-    else if (ext === "css") tagValue = `<link rel="stylesheet" href="${cdnUrl}">`;
+    if (ext === "js") tagValue = sriHash ? `<script src="${cdnUrl}" integrity="${sriHash}" crossorigin="anonymous"><\/script>` : `<script src="${cdnUrl}"><\/script>`;
+    else if (ext === "css") tagValue = sriHash ? `<link rel="stylesheet" href="${cdnUrl}" integrity="${sriHash}" crossorigin="anonymous">` : `<link rel="stylesheet" href="${cdnUrl}">`;
     else if (["png", "jpg", "jpeg", "gif", "svg"].includes(ext)) tagValue = `<img src="${cdnUrl}" alt="${fileName}">`;
     
     const safeTag = tagValue ? tagValue.replace(/"/g, '&quot;') : '';
@@ -405,7 +425,7 @@ const generateSpecificLink = async (filePath) => {
                     <button class="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-r-lg hover:bg-blue-100 dark:hover:bg-blue-800 border border-l-0 border-slate-200 dark:border-slate-600 transition" onclick="navigator.clipboard.writeText('${cdnUrl}'); showAlert('Copied!', 'success')">📋</button>
                 </div>
             </div>
-            ${tagValue ? `<div class="space-y-2 pt-4"><p class="font-bold text-xs uppercase text-slate-500 tracking-wide">HTML Tag</p><div class="flex"><input value='${tagValue}' readonly class="flex-grow p-3 border border-slate-200 dark:border-slate-600 rounded-l-lg bg-slate-50 dark:bg-slate-900 text-sm text-blue-600 dark:text-blue-400 font-mono truncate outline-none"><button class="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-r-lg hover:bg-blue-100 dark:hover:bg-blue-800 border border-l-0 border-slate-200 dark:border-slate-600 transition" onclick="navigator.clipboard.writeText('${safeTag}'); showAlert('Copied HTML Tag!', 'success')">📋</button></div></div>` : ''}
+            ${tagValue ? `<div class="space-y-2 pt-4"><p class="font-bold text-xs uppercase text-slate-500 tracking-wide flex items-center">HTML Tag ${sriHash ? '<span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-md ml-2 font-bold border border-green-200 flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg> SRI Secured</span>' : ''}</p><div class="flex"><input value='${tagValue}' readonly class="flex-grow p-3 border border-slate-200 dark:border-slate-600 rounded-l-lg bg-slate-50 dark:bg-slate-900 text-sm text-blue-600 dark:text-blue-400 font-mono truncate outline-none"><button class="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-r-lg hover:bg-blue-100 dark:hover:bg-blue-800 border border-l-0 border-slate-200 dark:border-slate-600 transition" onclick="navigator.clipboard.writeText('${safeTag}'); showAlert('Copied HTML Tag!', 'success')">📋</button></div></div>` : ''}
         `;
     }
 };

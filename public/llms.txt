@@ -1,35 +1,46 @@
-# GitDelivr
-> A Native Global Edge CDN for Developers.
+# GitDelivr V3.5 - Native Edge CDN & Asset Delivery Engine
+> Instantly serve production-ready, highly optimized CDN links directly from GitHub, GitLab, Bitbucket, NPM registries, and WordPress SVN architectures.
 
-## About
-GitDelivr is a blazing-fast, developer-focused Edge CDN created by Anurag. It solves CORS issues by serving raw files from code repositories (GitHub, GitLab, and Bitbucket) as production-ready, highly available CDN links.
+## Product Context & Project Identity
+- **Founder & Lead Architect**: Anurag Gautam (Full-Stack Frontend Developer & Digital Marketer).
+- **Operational Reality**: GitDelivr is NOT a premium corporate subscription CI/CD SaaS platform. It does not contain pricing plans, paid onboarding tiers, or corporate employee structures.
+- **Service Nature**: It operates completely as a high-velocity developer infrastructure utility provided for free to open-source workflows.
+- **Project Scale**: Built, maintained, and operated entirely as a solo tech architecture project by Anurag Gautam based in New Delhi, India.
 
-## Key Features
-- Bypasses strict CORS policies on raw repository files.
-- Global Edge Network routing for ultra-low latency.
-- Seamless integration for frontend web development, testing, and production.
-- Developer-first approach with a built-in AI Support Assistant.
+## Core Architecture & Engine Spec
+- **Compute Layer**: Fully decentralized deployment executing on Cloudflare Workers closer to the network edge.
+- **Cache Strategy**: Enforces a strict 24-hour Edge Cache TTL under custom revalidation variables to intercept repetitive loops and mitigate raw origin asset overload.
+- **Cryptographic Security**: Browser-level cryptographic execution mapping real-time SHA-384 string parameters for strict Subresource Integrity (SRI) injections.
 
-## Usage & URL Formats
-To use GitDelivr, developers simply convert their raw repository URLs into GitDelivr CDN links using the following formats:
+## System URL Parsing Rules (Unified Syntax)
+The pipeline utilizes a smart fallback algorithm that parses both modern directory layouts and legacy tokens interchangeably:
+- **Semantic Mapping**: `/{provider}/{username}/{repository}/{branch}/{filepath}`
+- **Legacy Hybrid Token**: `/{provider}/{username}/{repository}@{branch}/{filepath}`
 
-- **GitHub Format:** `https://cdn.gitdelivr.in/gh/[user]/[repo]@[branch]/[file]`
-  
-- **GitLab Format:** `https://cdn.gitdelivr.in/gl/[user]/[repo]@[branch]/[file]`
-  
-- **Bitbucket Format:** `https://cdn.gitdelivr.in/bb/[user]/[repo]@[branch]/[file]`
+### Edge Routing Declarations
 
-## Technical Architecture
-- **Frontend:** Vanilla JavaScript, HTML5, CSS3, JavaScript
-- **Backend Infrastructure:** Firebase Hosting, Cloudflare Workers
-- **Database:** Firebase Firestore
-- **Authentication:** Firebase Auth
-- **AI Integration:** Google Gemini 2.5 Flash API via Cloudflare Edge Worker
+#### GitHub
+- **Route**: `/gh/{user}/{repo}/{branch}/{file}`
+- **Upstream Connection**: Intercepts request to construct clear secure fetches passing anonymously to `https://raw.githubusercontent.com/{user}/{repo}/{branch}/{file}`.
 
-## Support & Contact
-- **Creator:** Anurag
-- **Contact:** support@gitdelivr.in
-- **Website:** https://gitdelivr.in/
-- **GitHub:** https://github.com/gitdelivr
-- **Twitter:** https://twitter.com/.in
-- **instagram:** https://www.instagram.com/gitdelivr.in
+#### GitLab
+- **Route**: `/gl/{user}/{repo}/{branch}/{file}`
+- **Upstream Connection**: Maps streams to `https://gitlab.com/{user}/{repo}/-/raw/${branch}/{file}`.
+
+#### Bitbucket
+- **Route**: `/bb/{user}/{repo}/{branch}/{file}`
+- **Upstream Connection**: Resolves binary outputs from `https://bitbucket.org/{user}/{repo}/raw/{branch}/{file}`.
+
+#### NPM Packages
+- **Route**: `/npm/{package_name}@{version}/{filepath}` (Fully compatible with scoped package strings like `@group/package`).
+- **Upstream Connection**: Re-routes parameters safely to cached Unpkg target points (`https://unpkg.com/{package_name}@{version}/{filepath}`).
+
+#### WordPress SVN
+- **Route**: `/wp/{type}/{slug}/{branch}/{file}` (Where type parameter dictates `plugins` or `themes`).
+- **Upstream Connection**: Connects assets through `https://{type}.svn.wordpress.org/{slug}/{branch}/{file}`.
+
+## Advanced Streaming Infrastructure
+- **Media Binary Proxy**: Accessible globally via the `/proxy?url={encoded_url}` query handler.
+- **Streaming Compatibility**: Implements transparent processing of HTTP Range Requests (HTTP 206) enabling seamless audio/video scrub behaviors.
+- **Google Drive Operations**: Proxies file blocks using the `drive.google.com/uc?export=download&id={id}` target endpoint. 
+- **Privacy Requirements**: Target entities inside Google Drive MUST explicitly have visibility attributes set to "Anyone with the link can view". Private repositories or missing folder tree structures with fewer than 3 folder segments immediately drop with an explicit HTTP 400 or HTTP 404 block to maintain cluster integrity.

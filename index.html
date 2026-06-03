@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitDelivr has Moved</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-up {
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 antialiased text-slate-200">
+
+    <div class="w-full max-w-lg bg-[#1e293b]/40 backdrop-blur-xl border border-slate-800/80 rounded-3xl p-8 text-center shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all duration-300 hover:border-blue-700/30 animate-fade-in-up">
+        
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-slate-900/60 border border-blue-700/40 mb-6 shadow-inner">
+            <img src="https://gitdelivr.in/favicon.ico" alt="GitDelivr Logo" class="w-10 h-10 object-contain drop-shadow-[0_0_12px_rgba(96,165,250,0.6)] hover:scale-105 transition-transform">
+        </div>
+
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+            GitDelivr Has Moved
+        </h1>
+        
+        <div class="mt-3 inline-flex items-center gap-1.5 px-3 py-1 bg-blue-700/20 border border-blue-700/40 rounded-full text-xs font-semibold text-blue-400 uppercase tracking-wider">
+            <i class="fa-solid fa-circle-info text-[10px]"></i> Domain Upgrade
+        </div>
+
+        <p class="mt-6 text-slate-400 text-sm sm:text-base leading-relaxed">
+            Humne native edge delivery framework aur services ko upgrade kiya hai. GitDelivr ab officially <span class="text-blue-400 font-semibold font-mono">gitdelivr.github.io</span> se permanent shift hokar naye high-speed domain par live ho chuka hai.
+        </p>
+
+        <div class="mt-6 bg-slate-800/50 rounded-2xl p-5 border border-slate-700/50 text-left transition-colors hover:border-blue-500/30 animate-fade-in-up" style="animation-delay: 0.2s; opacity: 0;">
+            <h3 class="text-white text-sm font-bold mb-3 uppercase tracking-wider flex items-center gap-2">
+                <i class="fa-solid fa-rocket text-blue-400"></i> What's New in V3.5?
+            </h3>
+            <ul class="space-y-2 text-sm text-slate-300">
+                <li class="flex items-start gap-2"><i class="fa-solid fa-check text-green-400 mt-0.5"></i> <span>Blazing Fast Global Edge CDN Network</span></li>
+                <li class="flex items-start gap-2"><i class="fa-solid fa-check text-green-400 mt-0.5"></i> <span>New Video & Audio Streamer Tools</span></li>
+                <li class="flex items-start gap-2"><i class="fa-solid fa-check text-green-400 mt-0.5"></i> <span>Automatic SRI Security Hash Generation</span></li>
+                <li class="flex items-start gap-2"><i class="fa-solid fa-check text-green-400 mt-0.5"></i> <span>Native Support for NPM & WordPress</span></li>
+            </ul>
+        </div>
+
+        <div class="mt-8 flex flex-col items-center gap-4">
+            <a href="https://gitdelivr.in" class="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-8 py-4 bg-blue-700 hover:bg-blue-600 text-white font-bold text-sm rounded-xl transition-all duration-300 shadow-lg shadow-blue-900/30 hover:shadow-blue-700/40 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 focus:ring-offset-slate-900 group">
+                Go to gitdelivr.in
+                <i class="fa-solid fa-arrow-right text-xs transition-transform group-hover:translate-x-1"></i>
+            </a>
+            <p class="text-xs text-slate-500 font-medium tracking-wide">Redirecting automatically in <span id="countdown" class="text-blue-400 font-bold font-mono">7</span> seconds...</p>
+        </div>
+
+        <div class="mt-8 pt-6 border-t border-slate-800/60 flex items-center justify-center gap-4 text-xs text-slate-500">
+            <div><i class="fa-solid fa-bolt text-blue-500/60"></i> Edge Powered</div>
+            <div>•</div>
+            <div><i class="fa-solid fa-shield-halved text-blue-500/60"></i> SRI Secured</div>
+        </div>
+
+    </div>
+
+    <script>
+        let seconds = 7;
+        const countdownEl = document.getElementById('countdown');
+        const interval = setInterval(() => {
+            seconds--;
+            if (countdownEl) countdownEl.innerText = seconds;
+            if (seconds <= 0) {
+                clearInterval(interval);
+                window.location.href = "https://gitdelivr.in";
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

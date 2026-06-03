@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="GitDelivr Network Health Center for browser-side CDN and source route checks.">
+    <title>GitDelivr | Network Health Center</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        };
+    </script>
+    <style>
+        :root {
+            color-scheme: dark;
+        }
+
+        body {
+            background:
+                linear-gradient(180deg, rgba(15, 23, 42, 0.96), #020617 38rem),
+                #020617;
+        }
+
+        .metric-card,
+        .panel,
+        .service-card {
+            background: rgba(15, 23, 42, 0.82);
+            border: 1px solid rgba(51, 65, 85, 0.9);
+            box-shadow: 0 18px 50px rgba(2, 6, 23, 0.26);
+        }
+
+        .service-card {
+            transition: border-color 160ms ease, transform 160ms ease, background-color 160ms ease;
+        }
+
+        .service-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(96, 165, 250, 0.64);
+            background: rgba(15, 23, 42, 0.96);
+        }
+
+        .status-dot {
+            box-shadow: 0 0 0 4px rgba(148, 163, 184, 0.12);
+        }
+
+        .status-healthy {
+            background: #22c55e;
+            box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.14), 0 0 18px rgba(34, 197, 94, 0.36);
+        }
+
+        .status-degraded {
+            background: #f59e0b;
+            box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.16), 0 0 18px rgba(245, 158, 11, 0.32);
+        }
+
+        .status-down {
+            background: #ef4444;
+            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.14), 0 0 18px rgba(239, 68, 68, 0.32);
+        }
+
+        .status-testing {
+            background: #94a3b8;
+            animation: pulse 1.2s ease-in-out infinite;
+        }
+
+        .filter-active {
+            color: #ffffff;
+            background: #2563eb;
+            border-color: #60a5fa;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 0.48;
+            }
+            50% {
+                opacity: 1;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                scroll-behavior: auto !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-100 font-sans antialiased">
+    <main class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
+        <header class="flex flex-col gap-6 border-b border-slate-800 pb-8 lg:flex-row lg:items-end lg:justify-between">
+            <div class="max-w-3xl">
+                <div class="mb-4 inline-flex items-center gap-2 rounded-lg border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-cyan-200">
+                    <i class="fa-solid fa-wave-square"></i>
+                    GitDelivr Observability
+                </div>
+                <h1 class="text-3xl font-black tracking-tight text-white sm:text-5xl">Network Health Center</h1>
+                <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-400 sm:text-base">
+                    Live browser-side checks for CDN assets, package routes, upstream providers, and public delivery paths.
+                </p>
+                <div class="mt-5 flex flex-wrap gap-2 text-xs font-semibold text-slate-300">
+                    <span class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5">Worker probe</span>
+                    <span class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5">Scheduled snapshot</span>
+                    <span class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5">2 samples per endpoint</span>
+                    <span class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5">8s timeout</span>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-3 sm:flex-row lg:pb-1">
+                <button id="autoRefreshButton" type="button" onclick="toggleAutoRefresh()" class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-5 py-3 text-sm font-bold text-slate-200 transition hover:border-slate-500 hover:bg-slate-800">
+                    <i class="fa-regular fa-clock"></i>
+                    Auto refresh off
+                </button>
+                <button id="runAuditButton" type="button" onclick="checkAll(true)" class="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-950/40 transition hover:bg-blue-500 disabled:cursor-wait disabled:opacity-70">
+                    <i id="runAuditIcon" class="fa-solid fa-rotate-right"></i>
+                    <span id="runAuditLabel">Run Deep Audit</span>
+                </button>
+            </div>
+        </header>
+
+        <section class="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5" aria-label="Network summary">
+            <article class="metric-card rounded-lg p-5">
+                <div class="flex items-center justify-between gap-3">
+                    <p class="text-xs font-bold uppercase tracking-wide text-slate-400">Overall</p>
+                    <span id="overallIndicator" class="status-dot status-testing h-3 w-3 rounded-full"></span>
+                </div>
+                <p id="overallStatus" class="mt-3 text-2xl font-black text-white">Testing</p>
+                <p id="overallDetail" class="mt-1 text-xs text-slate-500">Waiting for first audit</p>
+            </article>
+
+            <article class="metric-card rounded-lg p-5">
+                <div class="flex items-center justify-between gap-3">
+                    <p class="text-xs font-bold uppercase tracking-wide text-slate-400">Healthy</p>
+                    <i class="fa-solid fa-circle-check text-emerald-400"></i>
+                </div>
+                <p id="healthyCount" class="mt-3 text-2xl font-black text-white">0/0</p>
+                <p class="mt-1 text-xs text-slate-500">Endpoints online</p>
+            </article>
+
+            <article class="metric-card rounded-lg p-5">
+                <div class="flex items-center justify-between gap-3">
+                    <p class="text-xs font-bold uppercase tracking-wide text-slate-400">Average</p>
+                    <i class="fa-solid fa-gauge-high text-cyan-300"></i>
+                </div>
+                <p id="averageLatency" class="mt-3 text-2xl font-black text-white">--</p>
+                <p class="mt-1 text-xs text-slate-500">Successful probes</p>
+            </article>
+
+            <article class="metric-card rounded-lg p-5">
+                <div class="flex items-center justify-between gap-3">
+                    <p class="text-xs font-bold uppercase tracking-wide text-slate-400">Slowest</p>
+                    <i class="fa-solid fa-triangle-exclamation text-amber-300"></i>
+                </div>
+                <p id="slowestLatency" class="mt-3 truncate text-2xl font-black text-white">--</p>
+                <p id="slowestService" class="mt-1 truncate text-xs text-slate-500">No data yet</p>
+            </article>
+
+            <article class="metric-card rounded-lg p-5">
+                <div class="flex items-center justify-between gap-3">
+                    <p class="text-xs font-bold uppercase tracking-wide text-slate-400">Last Audit</p>
+                    <i class="fa-regular fa-calendar-check text-violet-300"></i>
+                </div>
+                <p id="lastAuditTime" class="mt-3 text-2xl font-black text-white">--</p>
+                <p id="lastAuditDetail" class="mt-1 text-xs text-slate-500">Not started</p>
+            </article>
+        </section>
+
+        <section class="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+            <div>
+                <div class="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <h2 class="text-xl font-black text-white">Endpoint Matrix</h2>
+                        <p id="matrixSubtitle" class="mt-1 text-sm text-slate-400">10 routes queued for audit</p>
+                    </div>
+                    <div class="flex flex-wrap gap-2" aria-label="Filter endpoints">
+                        <button data-filter="all" type="button" onclick="setFilter('all')" class="filter-button filter-active rounded-lg border border-slate-700 px-3 py-2 text-xs font-bold text-slate-300 transition hover:border-blue-400">All <span id="filter-all-count">0</span></button>
+                        <button data-filter="healthy" type="button" onclick="setFilter('healthy')" class="filter-button rounded-lg border border-slate-700 px-3 py-2 text-xs font-bold text-slate-300 transition hover:border-emerald-400">Healthy <span id="filter-healthy-count">0</span></button>
+                        <button data-filter="degraded" type="button" onclick="setFilter('degraded')" class="filter-button rounded-lg border border-slate-700 px-3 py-2 text-xs font-bold text-slate-300 transition hover:border-amber-400">Degraded <span id="filter-degraded-count">0</span></button>
+                        <button data-filter="down" type="button" onclick="setFilter('down')" class="filter-button rounded-lg border border-slate-700 px-3 py-2 text-xs font-bold text-slate-300 transition hover:border-red-400">Down <span id="filter-down-count">0</span></button>
+                    </div>
+                </div>
+
+                <div id="statusGrid" class="grid grid-cols-1 gap-4 xl:grid-cols-2"></div>
+            </div>
+
+            <aside class="space-y-6">
+                <section class="panel rounded-lg p-5">
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <h2 class="font-black text-white">Coverage</h2>
+                            <p class="mt-1 text-xs text-slate-500">Grouped by route type</p>
+                        </div>
+                        <button type="button" onclick="downloadReport()" class="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-700 text-slate-300 transition hover:border-blue-400 hover:text-white" title="Export JSON report" aria-label="Export JSON report">
+                            <i class="fa-solid fa-file-arrow-down"></i>
+                        </button>
+                    </div>
+                    <div id="coverageList" class="mt-5 space-y-3"></div>
+                </section>
+
+                <section class="panel rounded-lg p-5">
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <h2 class="font-black text-white">Recent Audit Log</h2>
+                            <p class="mt-1 text-xs text-slate-500">Last five completed runs</p>
+                        </div>
+                        <button type="button" onclick="clearLog()" class="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-700 text-slate-300 transition hover:border-red-400 hover:text-white" title="Clear audit log" aria-label="Clear audit log">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                    <div id="auditLog" class="mt-5 space-y-3"></div>
+                </section>
+
+                <section class="panel rounded-lg p-5">
+                    <h2 class="font-black text-white">Status Rules</h2>
+                    <div class="mt-4 space-y-3 text-sm text-slate-400">
+                        <div class="flex items-start gap-3">
+                            <span class="status-dot status-healthy mt-1 h-3 w-3 shrink-0 rounded-full"></span>
+                            <p><span class="font-bold text-slate-200">Healthy</span> means all samples reached the route inside the timeout.</p>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <span class="status-dot status-degraded mt-1 h-3 w-3 shrink-0 rounded-full"></span>
+                            <p><span class="font-bold text-slate-200">Degraded</span> means a route responded slowly, partially failed, or returned a non-OK HTTP status.</p>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <span class="status-dot status-down mt-1 h-3 w-3 shrink-0 rounded-full"></span>
+                            <p><span class="font-bold text-slate-200">Down</span> means no sample reached the endpoint before the timeout.</p>
+                        </div>
+                    </div>
+                </section>
+            </aside>
+        </section>
+    </main>
+
+    <script>
+        const STATUS_API_URL = 'https://cdn.gitdelivr.in/status.json';
+        let services = [
+            {
+                id: 'cdn-jquery',
+                name: 'GitHub Edge JS',
+                group: 'Core CDN',
+                icon: 'fa-code-branch',
+                description: 'GitHub-hosted JavaScript asset through GitDelivr.',
+                url: 'https://cdn.gitdelivr.in/gh/jquery/jquery@3.6.0/dist/jquery.min.js',
+                slowMs: 1400
+            },
+            {
+                id: 'cdn-bootstrap',
+                name: 'GitHub Edge CSS',
+                group: 'Core CDN',
+                icon: 'fa-layer-group',
+                description: 'Bootstrap CSS route through the GitDelivr CDN path.',
+                url: 'https://cdn.gitdelivr.in/gh/twbs/bootstrap@v5.3.3/dist/css/bootstrap.min.css',
+                slowMs: 1400
+            },
+            {
+                id: 'npm-react',
+                name: 'NPM React',
+                group: 'Package CDN',
+                icon: 'fa-cubes',
+                description: 'NPM package delivery check for a production React build.',
+                url: 'https://cdn.gitdelivr.in/npm/react@18.2.0/umd/react.production.min.js',
+                slowMs: 1600
+            },
+            {
+                id: 'npm-lodash',
+                name: 'NPM Lodash',
+                group: 'Package CDN',
+                icon: 'fa-box-open',
+                description: 'Secondary package route for NPM asset availability.',
+                url: 'https://cdn.gitdelivr.in/npm/lodash@4.17.21/lodash.min.js',
+                slowMs: 1600
+            },
+            {
+                id: 'wp-akismet',
+                name: 'WordPress SVN',
+                group: 'Source Providers',
+                icon: 'fa-brands fa-wordpress-simple',
+                description: 'WordPress plugin readme route through GitDelivr.',
+                url: 'https://cdn.gitdelivr.in/wp/plugins/akismet@trunk/readme.txt',
+                slowMs: 1800
+            },
+            {
+                id: 'gitlab-readme',
+                name: 'GitLab Route',
+                group: 'Source Providers',
+                icon: 'fa-brands fa-gitlab',
+                description: 'GitLab raw file route for upstream provider coverage.',
+                    url: 'https://cdn.gitdelivr.in/gl/gitlab-org/gitlab-foss@master/README.md',
+                slowMs: 2200
+            },
+            {
+                id: 'bitbucket-readme',
+                name: 'Bitbucket Route',
+                group: 'Source Providers',
+                icon: 'fa-brands fa-bitbucket',
+                description: 'Bitbucket raw file route for upstream provider coverage.',
+                    url: 'https://cdn.gitdelivr.in/bb/atlassian/git-lfs@master/README.md',
+                slowMs: 2200
+            },
+            {
+                    id: 'proxy-gdrive',
+                    name: 'Google Drive Proxy',
+                    group: 'Proxy Routing',
+                    icon: 'fa-brands fa-google-drive',
+                    description: 'Google Drive stream proxy route for media and large file delivery.',
+                    url: 'https://cdn.gitdelivr.in/proxy?url=https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Ddownload%26id%3D1q4DmJ_tKgqJ2U5w6B6Q8kT9f-jdqCwoj',
+                    slowMs: 2500
+                },
+                {
+                id: 'origin-rawgithub',
+                name: 'Raw GitHub Origin',
+                group: 'Origin Baseline',
+                icon: 'fa-brands fa-github',
+                description: 'Direct origin check used as a comparison baseline.',
+                url: 'https://raw.githubusercontent.com/jquery/jquery/3.6.0/dist/jquery.min.js',
+                slowMs: 2200
+            },
+            {
+                id: 'github-api',
+                name: 'GitHub API',
+                group: 'Origin Baseline',
+                icon: 'fa-code',
+                description: 'Public GitHub API reachability for upstream visibility.',
+                url: 'https://api.github.com/rate_limit',
+                method: 'GET',
+                slowMs: 2200
+            },
+            {
+                id: 'site-favicon',
+                name: 'GitDelivr Site',
+                group: 'Public Site',
+                icon: 'fa-globe',
+                description: 'Public website asset route and TLS availability check.',
+                url: 'https://gitdelivr.in/favicon.png',
+                slowMs: 1800
+            }
+        ];
+
+        const state = {
+            activeFilter: 'all',
+            results: new Map(),
+            logs: [],
+            latestPayload: null,
+            dataSource: 'pending',
+            isRunning: false,
+            autoRefreshTimer: null
+        };
+
+        const SAMPLE_COUNT = 2;
+        const TIMEOUT_MS = 8000;
+
+        function statusTone(status) {
+            return {
+                healthy: {
+                    text: 'Healthy',
+                    dot: 'status-healthy',
+                    badge: 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200',
+                    bar: 'bg-emerald-400'
+                },
+                degraded: {
+                    text: 'Degraded',
+                    dot: 'status-degraded',
+                    badge: 'border-amber-400/30 bg-amber-400/10 text-amber-200',
+                    bar: 'bg-amber-400'
+                },
+                down: {
+                    text: 'Down',
+                    dot: 'status-down',
+                    badge: 'border-red-400/30 bg-red-400/10 text-red-200',
+                    bar: 'bg-red-400'
+                },
+                testing: {
+                    text: 'Testing',
+                    dot: 'status-testing',
+                    badge: 'border-slate-600 bg-slate-800 text-slate-300',
+                    bar: 'bg-slate-500'
+                }
+            }[status] || {
+                text: 'Unknown',
+                dot: 'status-testing',
+                badge: 'border-slate-600 bg-slate-800 text-slate-300',
+                bar: 'bg-slate-500'
+            };
+        }
+
+        function iconClass(icon) {
+            if (!icon) return 'fa-solid fa-circle-nodes';
+            return icon.includes('fa-brands') || icon.includes('fa-regular') ? icon : `fa-solid ${icon}`;
+        }
+
+        function withCacheBuster(url) {
+            const separator = url.includes('?') ? '&' : '?';
+            return `${url}${separator}health_probe=${Date.now()}_${Math.random().toString(16).slice(2)}`;
+        }
+
+        async function fetchWithTimeout(url, options) {
+            const controller = new AbortController();
+            const timer = window.setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+            try {
+                return await fetch(url, {
+                    ...options,
+                    signal: controller.signal,
+                    cache: 'no-store'
+                });
+            } finally {
+                window.clearTimeout(timer);
+            }
+        }
+
+        async function runSample(service) {
+            const method = service.method || 'HEAD';
+            const url = withCacheBuster(service.url);
+            const start = performance.now();
+
+            try {
+                const response = await fetchWithTimeout(url, {
+                    method,
+                    mode: 'cors'
+                });
+                const latency = Math.round(performance.now() - start);
+                const contentLength = response.headers.get('content-length');
+
+                return {
+                    reachable: true,
+                    latency,
+                    httpStatus: response.status,
+                    httpOk: response.ok,
+                    corsLimited: false,
+                    contentLength,
+                    message: response.ok ? `${response.status} OK` : `HTTP ${response.status}`
+                };
+            } catch (corsError) {
+                const fallbackStart = performance.now();
+
+                try {
+                    await fetchWithTimeout(url, {
+                        method,
+                        mode: 'no-cors'
+                    });
+
+                    return {
+                        reachable: true,
+                        latency: Math.round(performance.now() - fallbackStart),
+                        httpStatus: null,
+                        httpOk: true,
+                        corsLimited: true,
+                        contentLength: null,
+                        message: 'Reachable'
+                    };
+                } catch (networkError) {
+                    return {
+                        reachable: false,
+                        latency: null,
+                        httpStatus: null,
+                        httpOk: false,
+                        corsLimited: false,
+                        contentLength: null,
+                        message: networkError.name === 'AbortError' ? 'Timeout' : 'Connection failed'
+                    };
+                }
+            }
+        }
+
+        async function auditService(service) {
+            const samples = [];
+
+            for (let sample = 0; sample < SAMPLE_COUNT; sample += 1) {
+                samples.push(await runSample(service));
+            }
+
+            const reachableSamples = samples.filter(sample => sample.reachable);
+            const failedSamples = samples.filter(sample => !sample.reachable);
+            const latencies = reachableSamples.map(sample => sample.latency).filter(Number.isFinite);
+            const averageLatency = latencies.length
+                ? Math.round(latencies.reduce((total, latency) => total + latency, 0) / latencies.length)
+                : null;
+            const hasHttpError = reachableSamples.some(sample => sample.httpStatus && sample.httpStatus >= 400);
+            const hasServerError = reachableSamples.some(sample => sample.httpStatus && sample.httpStatus >= 500);
+            const isSlow = Number.isFinite(averageLatency) && averageLatency > service.slowMs;
+            const isPartial = failedSamples.length > 0 && reachableSamples.length > 0;
+            let status = 'healthy';
+
+            if (!reachableSamples.length || hasServerError) {
+                status = 'down';
+            } else if (hasHttpError || isSlow || isPartial) {
+                status = 'degraded';
+            }
+
+            const latestReachable = reachableSamples[reachableSamples.length - 1] || null;
+            const latestFailed = failedSamples[failedSamples.length - 1] || null;
+            const reason = status === 'healthy'
+                ? (latestReachable?.corsLimited ? 'Route reached, HTTP status hidden by CORS' : 'All samples completed')
+                : buildReason({ hasHttpError, hasServerError, isSlow, isPartial, latestReachable, latestFailed });
+
+            return {
+                ...service,
+                status,
+                averageLatency,
+                samples,
+                successfulSamples: reachableSamples.length,
+                failedSamples: failedSamples.length,
+                lastChecked: new Date(),
+                contentLength: latestReachable?.contentLength || null,
+                httpStatus: latestReachable?.httpStatus || null,
+                corsLimited: reachableSamples.some(sample => sample.corsLimited),
+                reason
+            };
+        }
+
+        function buildReason(details) {
+            if (details.hasServerError) return 'Server error response detected';
+            if (details.hasHttpError && details.latestReachable?.httpStatus) return `HTTP ${details.latestReachable.httpStatus} response detected`;
+            if (details.isPartial) return 'Some samples failed';
+            if (details.isSlow) return 'Latency crossed the route threshold';
+            return details.latestFailed?.message || 'Route did not complete normally';
+        }
+
+        function formatLatency(value) {
+            return Number.isFinite(value) ? `${value}ms` : '--';
+        }
+
+        function formatBytes(value) {
+            const bytes = Number(value);
+            if (!Number.isFinite(bytes) || bytes <= 0) return 'Hidden';
+            if (bytes < 1024) return `${bytes} B`;
+            if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+            return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+        }
+
+        function formatTime(date) {
+            if (!date) return '--';
+            const value = date instanceof Date ? date : new Date(date);
+            return Number.isNaN(value.getTime())
+                ? '--'
+                : value.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+
+        function sourceLabel() {
+            if (state.dataSource === 'cloudflare-worker') return 'Cloudflare Worker snapshot';
+            if (state.dataSource === 'browser-fallback') return 'Browser fallback';
+            return 'Status API';
+        }
+
+        function renderServiceCards() {
+            const grid = document.getElementById('statusGrid');
+            const filteredServices = services.filter(service => {
+                const status = state.results.get(service.id)?.status || 'testing';
+                return state.activeFilter === 'all' || status === state.activeFilter;
+            });
+
+            if (!filteredServices.length) {
+                grid.innerHTML = `
+                    <div class="panel rounded-lg p-8 text-center xl:col-span-2">
+                        <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-lg border border-slate-700 text-slate-400">
+                            <i class="fa-solid fa-filter-circle-xmark"></i>
+                        </div>
+                        <h3 class="mt-4 font-black text-white">No endpoints match this filter</h3>
+                        <p class="mt-1 text-sm text-slate-500">Switch filters or run a fresh audit.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = filteredServices.map(service => {
+                const result = state.results.get(service.id);
+                return serviceCardTemplate(service, result);
+            }).join('');
+        }
+
+        function serviceCardTemplate(service, result) {
+            const status = result?.status || 'testing';
+            const tone = statusTone(status);
+            const latency = result ? formatLatency(result.averageLatency) : '--';
+            const samples = result ? `${result.successfulSamples}/${SAMPLE_COUNT}` : `0/${SAMPLE_COUNT}`;
+            const statusLine = result ? result.reason : 'Queued for audit';
+            const contentLength = result ? formatBytes(result.contentLength) : '--';
+            const httpStatus = result
+                ? (result.httpStatus ? `HTTP ${result.httpStatus}` : (result.corsLimited ? 'CORS hidden' : 'Pending'))
+                : 'Pending';
+            const checkedAt = result ? formatTime(result.lastChecked) : '--';
+            const barWidth = result?.averageLatency
+                ? Math.min(100, Math.max(10, Math.round((result.averageLatency / service.slowMs) * 100)))
+                : 12;
+
+            return `
+                <article id="card-${service.id}" class="service-card rounded-lg p-5" data-status="${status}">
+                    <div class="flex items-start justify-between gap-4">
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-3">
+                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-700 bg-slate-950 text-blue-200">
+                                    <i class="${iconClass(service.icon)}"></i>
+                                </span>
+                                <div class="min-w-0">
+                                    <h3 class="truncate text-base font-black text-white">${service.name}</h3>
+                                    <p class="text-xs font-semibold text-slate-500">${service.group}</p>
+                                </div>
+                            </div>
+                            <p class="mt-4 text-sm leading-6 text-slate-400">${service.description}</p>
+                        </div>
+                        <span class="status-dot ${tone.dot} mt-1 h-3 w-3 shrink-0 rounded-full" aria-label="${tone.text}"></span>
+                    </div>
+
+                    <div class="mt-5 flex flex-wrap gap-2">
+                        <span class="rounded-lg border px-2.5 py-1 text-xs font-bold ${tone.badge}">${tone.text}</span>
+                        <span class="rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1 text-xs font-bold text-slate-300">${samples} samples</span>
+                        <span class="rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1 text-xs font-bold text-slate-300">${httpStatus}</span>
+                    </div>
+
+                    <div class="mt-5 grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                            <p class="text-xs font-bold uppercase tracking-wide text-slate-500">Latency</p>
+                            <p class="mt-1 font-black text-white">${latency}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold uppercase tracking-wide text-slate-500">Payload</p>
+                            <p class="mt-1 font-black text-white">${contentLength}</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 h-2 overflow-hidden rounded-full bg-slate-800">
+                        <div class="h-full ${tone.bar}" style="width: ${barWidth}%"></div>
+                    </div>
+
+                    <div class="mt-5 border-t border-slate-800 pt-4">
+                        <p class="text-sm font-semibold text-slate-300">${statusLine}</p>
+                        <div class="mt-3 flex items-center justify-between gap-3">
+                            <p class="text-xs text-slate-500">Checked ${checkedAt}</p>
+                            <a href="${service.url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-xs font-bold text-slate-300 transition hover:border-blue-400 hover:text-white">
+                                Open
+                                <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                            </a>
+                        </div>
+                        <p class="mt-3 break-all font-mono text-[11px] leading-5 text-slate-600">${service.url}</p>
+                    </div>
+                </article>
+            `;
+        }
+
+        function updateSummary() {
+            const results = Array.from(state.results.values());
+            const healthy = results.filter(result => result.status === 'healthy').length;
+            const degraded = results.filter(result => result.status === 'degraded').length;
+            const down = results.filter(result => result.status === 'down').length;
+            const completed = results.length;
+            const successfulLatencies = results
+                .map(result => result.averageLatency)
+                .filter(Number.isFinite);
+            const average = successfulLatencies.length
+                ? Math.round(successfulLatencies.reduce((total, latency) => total + latency, 0) / successfulLatencies.length)
+                : null;
+            const slowest = results
+                .filter(result => Number.isFinite(result.averageLatency))
+                .sort((left, right) => right.averageLatency - left.averageLatency)[0];
+            const overall = down > 0 ? 'down' : degraded > 0 ? 'degraded' : completed === services.length ? 'healthy' : 'testing';
+            const tone = statusTone(overall);
+
+            document.getElementById('overallIndicator').className = `status-dot ${tone.dot} h-3 w-3 rounded-full`;
+            document.getElementById('overallStatus').textContent = tone.text;
+            document.getElementById('overallDetail').textContent = completed === services.length
+                ? `${healthy} healthy, ${degraded} degraded, ${down} down`
+                : `${completed}/${services.length} endpoints completed`;
+            document.getElementById('healthyCount').textContent = `${healthy}/${services.length}`;
+            document.getElementById('averageLatency').textContent = formatLatency(average);
+            document.getElementById('slowestLatency').textContent = slowest ? formatLatency(slowest.averageLatency) : '--';
+            document.getElementById('slowestService').textContent = slowest ? slowest.name : 'No data yet';
+            document.getElementById('matrixSubtitle').textContent = `${services.length} routes monitored, ${completed} completed`;
+            document.getElementById('filter-all-count').textContent = services.length;
+            document.getElementById('filter-healthy-count').textContent = healthy;
+            document.getElementById('filter-degraded-count').textContent = degraded;
+            document.getElementById('filter-down-count').textContent = down;
+
+            const lastRun = results
+                .map(result => result.lastChecked)
+                .filter(Boolean)
+                .map(value => value instanceof Date ? value : new Date(value))
+                .filter(value => !Number.isNaN(value.getTime()))
+                .sort((left, right) => right.getTime() - left.getTime())[0];
+            document.getElementById('lastAuditTime').textContent = lastRun ? formatTime(lastRun) : '--';
+            document.getElementById('lastAuditDetail').textContent = state.isRunning ? 'Audit running' : (lastRun ? sourceLabel() : 'Not started');
+
+            renderCoverage();
+        }
+
+        function renderCoverage() {
+            const coverage = document.getElementById('coverageList');
+            const groups = [...new Set(services.map(service => service.group))];
+
+            coverage.innerHTML = groups.map(group => {
+                const groupServices = services.filter(service => service.group === group);
+                const groupResults = groupServices.map(service => state.results.get(service.id)).filter(Boolean);
+                const healthy = groupResults.filter(result => result.status === 'healthy').length;
+                const degraded = groupResults.filter(result => result.status === 'degraded').length;
+                const down = groupResults.filter(result => result.status === 'down').length;
+                const status = down > 0 ? 'down' : degraded > 0 ? 'degraded' : groupResults.length === groupServices.length ? 'healthy' : 'testing';
+                const tone = statusTone(status);
+
+                return `
+                    <div class="rounded-lg border border-slate-800 bg-slate-950/60 p-3">
+                        <div class="flex items-center justify-between gap-3">
+                            <div class="min-w-0">
+                                <p class="truncate text-sm font-bold text-white">${group}</p>
+                                <p class="mt-1 text-xs text-slate-500">${healthy} OK, ${degraded} degraded, ${down} down</p>
+                            </div>
+                            <span class="status-dot ${tone.dot} h-3 w-3 shrink-0 rounded-full"></span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderLog() {
+            const log = document.getElementById('auditLog');
+
+            if (!state.logs.length) {
+                log.innerHTML = `
+                    <div class="rounded-lg border border-slate-800 bg-slate-950/60 p-4 text-sm text-slate-500">
+                        No completed audits yet.
+                    </div>
+                `;
+                return;
+            }
+
+            log.innerHTML = state.logs.map(entry => {
+                const tone = statusTone(entry.status);
+                return `
+                    <div class="rounded-lg border border-slate-800 bg-slate-950/60 p-4">
+                        <div class="flex items-center justify-between gap-3">
+                            <p class="text-sm font-black text-white">${entry.time}</p>
+                            <span class="rounded-lg border px-2 py-1 text-[11px] font-bold ${tone.badge}">${tone.text}</span>
+                        </div>
+                        <p class="mt-2 text-xs leading-5 text-slate-500">${entry.summary}</p>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function addAuditLog() {
+            const results = Array.from(state.results.values());
+            const healthy = results.filter(result => result.status === 'healthy').length;
+            const degraded = results.filter(result => result.status === 'degraded').length;
+            const down = results.filter(result => result.status === 'down').length;
+            const status = down > 0 ? 'down' : degraded > 0 ? 'degraded' : 'healthy';
+            const latencies = results.map(result => result.averageLatency).filter(Number.isFinite);
+            const average = latencies.length
+                ? Math.round(latencies.reduce((total, latency) => total + latency, 0) / latencies.length)
+                : null;
+
+            state.logs.unshift({
+                time: formatTime(new Date()),
+                status,
+                summary: `${healthy}/${services.length} healthy endpoints, ${formatLatency(average)} average latency via ${sourceLabel()}.`
+            });
+            state.logs = state.logs.slice(0, 5);
+            renderLog();
+        }
+
+        function setFilter(filter) {
+            state.activeFilter = filter;
+            document.querySelectorAll('.filter-button').forEach(button => {
+                button.classList.toggle('filter-active', button.dataset.filter === filter);
+            });
+            renderServiceCards();
+        }
+
+        async function fetchStatusSnapshot(forceRefresh) {
+            const url = new URL(STATUS_API_URL);
+            if (forceRefresh) url.searchParams.set('refresh', '1');
+            url.searchParams.set('source', 'health-center');
+
+            const response = await fetch(url.toString(), {
+                headers: { Accept: 'application/json' },
+                cache: 'no-store'
+            });
+
+            if (!response.ok) {
+                throw new Error(`Status API returned HTTP ${response.status}`);
+            }
+
+            return response.json();
+        }
+
+        function applyStatusPayload(payload) {
+            if (!payload || !Array.isArray(payload.results)) {
+                throw new Error('Status API returned an invalid payload');
+            }
+
+            services = payload.results.map(result => ({
+                id: result.id,
+                name: result.name,
+                group: result.group,
+                icon: result.icon,
+                description: result.description,
+                url: result.url,
+                method: result.method,
+                slowMs: result.slowMs || 2000
+            }));
+
+            state.results.clear();
+            payload.results.forEach(result => {
+                state.results.set(result.id, {
+                    ...result,
+                    lastChecked: result.lastChecked || payload.generatedAt,
+                    corsLimited: false
+                });
+            });
+            state.latestPayload = payload;
+            state.dataSource = payload.checkedFrom || 'status-api';
+        }
+
+        async function runBrowserFallbackAudit() {
+            state.dataSource = 'browser-fallback';
+
+            const checks = services.map(async service => {
+                const result = await auditService(service);
+                state.results.set(service.id, result);
+                updateSummary();
+                renderServiceCards();
+                return result;
+            });
+
+            await Promise.all(checks);
+            state.latestPayload = {
+                generatedAt: new Date().toISOString(),
+                checkedFrom: 'browser-fallback',
+                sampleCount: SAMPLE_COUNT,
+                timeoutMs: TIMEOUT_MS
+            };
+        }
+
+        async function checkAll(forceRefresh = false) {
+            if (state.isRunning) return;
+
+            state.isRunning = true;
+            state.results.clear();
+            setRunButtonState(true);
+            updateSummary();
+            renderServiceCards();
+
+            try {
+                const payload = await fetchStatusSnapshot(forceRefresh);
+                applyStatusPayload(payload);
+            } catch (error) {
+                console.warn('Status API unavailable, using browser fallback:', error);
+                await runBrowserFallbackAudit();
+            }
+
+            state.isRunning = false;
+            setRunButtonState(false);
+            updateSummary();
+            renderServiceCards();
+            addAuditLog();
+        }
+
+        function setRunButtonState(isRunning) {
+            const button = document.getElementById('runAuditButton');
+            const icon = document.getElementById('runAuditIcon');
+            const label = document.getElementById('runAuditLabel');
+
+            button.disabled = isRunning;
+            label.textContent = isRunning ? 'Running Audit' : 'Run Deep Audit';
+            icon.className = isRunning ? 'fa-solid fa-spinner animate-spin' : 'fa-solid fa-rotate-right';
+        }
+
+        function toggleAutoRefresh() {
+            const button = document.getElementById('autoRefreshButton');
+
+            if (state.autoRefreshTimer) {
+                window.clearInterval(state.autoRefreshTimer);
+                state.autoRefreshTimer = null;
+                button.innerHTML = '<i class="fa-regular fa-clock"></i> Auto refresh off';
+                button.classList.remove('border-emerald-500', 'text-emerald-200');
+                return;
+            }
+
+            state.autoRefreshTimer = window.setInterval(() => checkAll(false), 60000);
+            button.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Auto refresh on';
+            button.classList.add('border-emerald-500', 'text-emerald-200');
+        }
+
+        function clearLog() {
+            state.logs = [];
+            renderLog();
+        }
+
+        function downloadReport() {
+            const payload = {
+                generatedAt: new Date().toISOString(),
+                source: sourceLabel(),
+                upstreamSnapshot: state.latestPayload,
+                sampleCount: SAMPLE_COUNT,
+                timeoutMs: TIMEOUT_MS,
+                results: Array.from(state.results.values()).map(result => ({
+                    id: result.id,
+                    name: result.name,
+                    group: result.group,
+                    status: result.status,
+                    averageLatency: result.averageLatency,
+                    successfulSamples: result.successfulSamples,
+                    failedSamples: result.failedSamples,
+                    httpStatus: result.httpStatus,
+                    corsLimited: result.corsLimited,
+                    reason: result.reason,
+                    url: result.url
+                }))
+            };
+            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `gitdelivr-health-${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(link);
+            link.click();
+            URL.revokeObjectURL(link.href);
+            link.remove();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderServiceCards();
+            renderCoverage();
+            renderLog();
+            updateSummary();
+            checkAll();
+        });
+    </script>
+</body>
+</html>
